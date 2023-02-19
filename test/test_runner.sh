@@ -2,7 +2,7 @@
 
 ARGS=$@
 echo
-echo "Running tests"
+echo "Running Test Suite"
 echo 
 RED='\033[0;31m'
 NO_COLOR='\033[0m'
