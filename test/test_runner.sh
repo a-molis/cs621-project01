@@ -19,10 +19,12 @@ do
   ${ARG}
   STATUS=$?
   if [[ ${STATUS} -gt 0 ]]; then
+    let FAILED++
     echo -e " \t Test ${ARG} ${RED}FAILED${NO_COLOR}"
     echo
     break
   else
+    let PASSED++
     echo -e " \t Test ${ARG} ${GREEN}PASSED${NO_COLOR}"
   fi
   echo
