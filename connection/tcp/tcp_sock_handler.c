@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "tcp_sock_handler.h"
 
-
+// TODO add free/destroy
 TCP_HANDLER new_tcp_handler(int sockfd) 
 {
   TCP_HANDLER handler = malloc(sizeof(struct TCP_SOCKET_HANDLER));
