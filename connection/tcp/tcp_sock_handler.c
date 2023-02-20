@@ -41,10 +41,10 @@ size_t tcp_send(TCP_HANDLER handler, char *buf, size_t buf_len)
 {
   char num_buf[4];
   uint32_t len_nb = htonl(buf_len);
-  for ( int i = 3, shift = 0; i > 0; i--, shift++) {
-    // num_buf[3] = (len_nb >> 0) & 0xFF;
-    num_buf[i] = (len_nb >> shift) & 0xFF;
-  }
+  num_buf[3] = (len_nb >> 0) & 0xFF;
+  num_buf[2] = (len_nb >> 8) & 0xFF;
+  num_buf[1] = (len_nb >> 16) & 0xFF;
+  num_buf[0] = (len_nb >> 24) & 0xFF;
   size_t sent_size = tcp_sendn(handler, num_buf, 4);
   if (sent_size) 
     {
@@ -59,4 +59,36 @@ size_t tcp_send(TCP_HANDLER handler, char *buf, size_t buf_len)
     }
   return 0;
 }
+
+size_t tcp_recv(TCP_HANDLER handler, char **buf, size_t buf_len)
+{
+  char num_buf[4];
+  size_t recv_len = tcp_recvn(handler, num_buf, 4); 
+  if (recv_len < 0)
+    {
+      perror("tcp_recvn failed to recv enough data\
+          from socket when getting length");
+      return 1;
+    }
+  else if (recv_len == 0)
+    return EOF; 
+  uint32_t len_nb = (num_buf[0] << 24)
+                    || (num_buf[1] << 16) 
+                    || (num_buf[2] << 8)
+                    || (num_buf[3] << 0);
+  size_t size = ntohl(len_nb);
+  *buf = malloc(sizeof(char) * size); 
+  size_t received = tcp_recvn(handler, *buf, size); 
+  if (received < 0)
+    {
+      perror("tcp_recv failed to recv enough data \
+          from socket when getting data");
+      return 1;
+    }
+  else if (recv_len == 0)
+    return EOF; 
+  return 0;
+}
+
+
 
