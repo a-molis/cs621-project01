@@ -2,3 +2,5 @@
 *.swp
 .ccls-cache/
 *.o
+test_tcp_sock_handler
+compile_commands.json

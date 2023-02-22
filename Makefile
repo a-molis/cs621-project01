@@ -1,18 +1,25 @@
 CFLAGS = -g -std=c99 
 CC = gcc
-OBJ=tcp_sock_handler.o
-INC=include
 test_dir=test
-bin=test/test_tcp_sock_handler
+OBJ=$(test_dir)/test_tcp_sock_handler.o
+INC=include
+test_bin=$(test_dir)/test_tcp_sock_handler
+test_run=$(test_dir)/test_runner.sh
+exe=$(addprefix ./, $(test_bin))
 
-all: $(bin)
+all: $(test_bin)
 
-$(OBJ): %.o: src/%.c
+test: $(test_bin)
+	sh $(test_run) $(exe)
+
+$(OBJ): %.o: %.c
 	$(CC) $(CFLAGS) -c $< -I $(INC) -o $@ 
 
-$(bin): $(OBJ)
+$(test_bin): %: %.o
 	$(CC) $(CFLAGS) $^ -o $@
 
+
+
 clean:
-	-rm $(bin)
+	-rm $(test_bin)
 	-rm $(OBJ)
