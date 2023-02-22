@@ -7,8 +7,8 @@ bin=test/test_tcp_sock_handler
 
 all: $(bin)
 
-$(OBJ): src/%.o: src/%.c
-	$(CC) $(CFLAGS) -I $(INC) -o $@ $<
+$(OBJ): %.o: src/%.c
+	$(CC) $(CFLAGS) -c $< -I $(INC) -o $@ 
 
 $(bin): $(OBJ)
 	$(CC) $(CFLAGS) $^ -o $@
