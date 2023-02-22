@@ -13,10 +13,11 @@ TCP_HANDLER new_tcp_handler(int sockfd)
 }
 size_t destroy_tcp_handler(TCP_HANDLER handler)
 {
-  if (handler) {
+  if (handler) 
     free (handler);
   return 0;
-  }
+}
+
 size_t tcp_recvn(TCP_HANDLER handler, char *buf, size_t buf_len)
 {
   size_t received = recv(handler->sockfd, buf, buf_len, 0);
