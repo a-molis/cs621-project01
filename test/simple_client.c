@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <unistd.h>
 #include "tcp_sock_handler.h"
 
 int main(int argc, char *argv[]) {
@@ -21,5 +22,19 @@ int main(int argc, char *argv[]) {
        perror("cannot connect to server");
        abort();
     }
+    
+  TCP_HANDLER handler = new_tcp_handler (sock);
+  char test[6] = {'\0'};
+  size_t received = tcp_recvn (handler, test, 6);
+  if (received) 
+    printf("Client failed to receive message from server from server\n");
+  else
+    printf("Client received message from server: %s\n", test);
+  
+  if (destroy_tcp_handler (handler))
+    printf("Failed to destroy client socket handler\n");
+  if (close (sock))
+    printf("Failed to close client sockfd\n");
+   
   return 0;
 }
