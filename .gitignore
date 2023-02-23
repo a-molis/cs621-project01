@@ -7,3 +7,5 @@ compile_commands.json
 tags
 *.so
 simple_client
+simple_server
+.gdb_history

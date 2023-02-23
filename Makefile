@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS += -g -std=c99 -Wall -fPIC -I include
+CFLAGS += -g -std=c99 -Wall -I include
 LDFLAGS += -L. -lconn
 
 test_dir=test
@@ -24,8 +24,6 @@ test: $(test_bin)
 
 $(OBJ): %.o: %.c
 	$(CC) $(CFLAGS) -c $< $(LDFLAGS) -o $@ 
-
-simple_server.o: $(test_dir)/simpe_server.c $(INC)/tcp_sock_handler.h
 
 $(OBJ): $(lib_ob)
 

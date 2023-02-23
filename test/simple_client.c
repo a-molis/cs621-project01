@@ -17,17 +17,20 @@ int main(int argc, char *argv[]) {
   sin.sin_family = AF_INET;
   sin.sin_addr.s_addr = server_addr;
   sin.sin_port = htons (server_port);
+ 
+  printf("Client connecting to server on host %s on port %d\n", argv[1], server_port); 
   if (connect (sock, (struct sockaddr *) &sin, sizeof (sin))<0) 
     {
        perror("cannot connect to server");
        abort();
     }
     
+  printf("Client connected to server on host %s on port %d\n", argv[1], server_port); 
   TCP_HANDLER handler = new_tcp_handler (sock);
   char test[6] = {'\0'};
   size_t received = tcp_recvn (handler, test, 6);
   if (received) 
-    printf("Client failed to receive message from server from server\n");
+    printf("Client failed to receive message from server from server %s\n", test);
   else
     printf("Client received message from server: %s\n", test);
   
