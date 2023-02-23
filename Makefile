@@ -9,15 +9,13 @@ INC=include
 
 lib_ob=$(src)/$(conn)/tcp_sock_handler.o
 OBJ=$(test_dir)/test_tcp_sock_handler.o $(test_dir)/simple_client.o 
-test_bin=$(test_dir)/test_tcp_sock_handler $(test_dir)/simple_client
+test_bin=$(test_dir)/test_tcp_sock_handler $(test_dir)/simple_client $(test_dir)/simple_server
 test_run=$(test_dir)/test_runner.sh
 share=libconn.so
 
 exe=$(addprefix ./, $(test_bin))
 
 all: $(test_bin)
-
-$(test_bin): libconn.so
 
 libconn.so: $(lib_ob)
 	$(CC) $(CFLAGS) $< -shared -o $@
@@ -26,12 +24,13 @@ test: $(test_bin)
 	sh $(test_run) $(exe)
 
 $(OBJ): %.o: %.c
-	$(CC) $(CFLAGS) -c $< -I $(INC) $(LDFLAGS) -o $@ 
+	$(CC) $(CFLAGS) -c $< $(LDFLAGS) -o $@ 
 
 simple_server.o: $(test_dir)/simpe_server.c $(INC)/tcp_sock_handler.h
 
+
 $(test_bin): %: %.o
-	 $(CC) $(CFLAGS) $(LIB_OBJ) $^ -o $@
+	 $(CC) $(CFLAGS) $(lib_ob) $^ -o $@
 
 clean:
 	-rm $(share)

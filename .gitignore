@@ -5,3 +5,5 @@
 test_tcp_sock_handler
 compile_commands.json
 tags
+*.so
+simple_client
