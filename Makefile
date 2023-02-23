@@ -11,7 +11,6 @@ lib_ob=$(src)/$(conn)/tcp_sock_handler.o
 OBJ=$(test_dir)/test_tcp_sock_handler.o $(test_dir)/simple_client.o 
 test_bin=$(test_dir)/test_tcp_sock_handler $(test_dir)/simple_client $(test_dir)/simple_server
 test_run=$(test_dir)/test_runner.sh
-share=libconn.so
 
 exe=$(addprefix ./, $(test_bin))
 
@@ -28,12 +27,12 @@ $(OBJ): %.o: %.c
 
 simple_server.o: $(test_dir)/simpe_server.c $(INC)/tcp_sock_handler.h
 
+$(OBJ): $(lib_ob)
 
 $(test_bin): %: %.o
 	 $(CC) $(CFLAGS) $(lib_ob) $^ -o $@
 
 clean:
-	-rm $(share)
 	-rm $(lib_ob)
 	-rm $(test_bin)
 	-rm $(OBJ)
