@@ -25,7 +25,8 @@ int destroy_tcp_handler(TCP_HANDLER handler)
 
 TCP_SERVER tcp_new_server(int port)
 {
-  TCP_SERVER server = malloc(sizeof (struct TCP_SOCKET_HANDLER));
+  TCP_SERVER server = malloc (sizeof (struct TCP_SOCKET_HANDLER));
+
   server->port = port;
   return server;
 }
@@ -38,6 +39,8 @@ int tcp_server_start(TCP_SERVER server)
       perror ("couldn’t create TCP socket");
       abort ();
     }
+  TCP_HANDLER handler = new_tcp_handler (sock);
+  server->tcp_handler = handler;
   if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &optval,
                   sizeof (optval)) < 0)
     {
@@ -67,10 +70,10 @@ int tcp_server_start(TCP_SERVER server)
 
 TCP_HANDLER tcp_server_next_connection(TCP_SERVER server)
 {
-  printf("Server waiting for incoming connection on port %d\n", server->port);
   struct sockaddr_in addr;
   int client_sock = sizeof (addr);
   socklen_t addr_len = client_sock;
+  printf("Server waiting for incoming connection on port %d\n", server->port);
   client_sock = accept (server->tcp_handler->sockfd, (struct sockaddr *)&addr, &addr_len);
   printf("Server made new connection\n");
   if (client_sock < 0)
@@ -140,7 +143,7 @@ int tcp_send(TCP_HANDLER handler, char *buf, int buf_len)
   int sent_size = tcp_sendn(handler, num_buf, 4);
   if (sent_size)
     {
-      perror("Error with tcp_send failed to sent size");
+      perror ("Error with tcp_send failed to sent size");
       return 1;
     }
   int sent_data = tcp_sendn(handler, buf, buf_len);
@@ -163,7 +166,7 @@ int tcp_recv(TCP_HANDLER handler, char **buf, int buf_len)
       return 1;
     }
   else if (recv_len == 0)
-    return EOF; 
+    return EOF;
   uint32_t len_nb = (num_buf[0] << 24)
                     | (num_buf[1] << 16)
                     | (num_buf[2] << 8)

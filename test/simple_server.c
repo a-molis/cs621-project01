@@ -11,7 +11,8 @@ int main(int argc,char *argv[]) {
 
   TCP_SERVER server = tcp_new_server (server_port);
   int started = tcp_server_start (server);
-  if (!started)
+  printf("started %d\n", started);
+  if (started)
     {
       perror ("Unable to start server");
       abort ();
