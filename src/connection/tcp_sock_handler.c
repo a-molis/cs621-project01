@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <sys/socket.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,15 +19,17 @@ TCP_HANDLER new_tcp_handler(int sockfd)
 
 int destroy_tcp_handler(TCP_HANDLER handler)
 {
-  if (handler) 
-    free (handler);
+  if (handler)
+    {
+      close (handler->sockfd);
+      free (handler);
+    }
   return 0;
 }
 
 TCP_SERVER tcp_new_server(int port)
 {
   TCP_SERVER server = malloc (sizeof (struct TCP_SOCKET_HANDLER));
-
   server->port = port;
   return server;
 }
@@ -40,7 +43,7 @@ int tcp_server_start(TCP_SERVER server)
       abort ();
     }
   TCP_HANDLER handler = new_tcp_handler (sock);
-  server->tcp_handler = handler;
+  server->handler = handler;
   if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &optval,
                   sizeof (optval)) < 0)
     {
@@ -74,7 +77,7 @@ TCP_HANDLER tcp_server_next_connection(TCP_SERVER server)
   int client_sock = sizeof (addr);
   socklen_t addr_len = client_sock;
   printf("Server waiting for incoming connection on port %d\n", server->port);
-  client_sock = accept (server->tcp_handler->sockfd, (struct sockaddr *)&addr, &addr_len);
+  client_sock = accept (server->handler->sockfd, (struct sockaddr *)&addr, &addr_len);
   printf("Server made new connection\n");
   if (client_sock < 0)
     {
@@ -89,11 +92,55 @@ int destroy_tcp_sever(TCP_SERVER server)
 {
   if (server)
     {
-      if (server->tcp_handler)
-        free (server->tcp_handler);
+      destroy_tcp_handler (server->handler);
       free(server);
     }
    return 0;
+}
+
+TCP_CLIENT_CONN tcp_new_client(char *host, unsigned short port)
+{
+  TCP_CLIENT_CONN client = malloc (sizeof (struct TCP_CLIENT_HANDLER));
+  client->port = port;
+  client->host = host;
+  return client;
+}
+
+int tcp_client_connect(TCP_CLIENT_CONN client)
+{
+  int sock = socket (PF_INET, SOCK_STREAM, 0);
+
+  struct sockaddr_in sin;
+  struct hostent *host = gethostbyname (client->host);
+  in_addr_t server_addr = *(in_addr_t *) host->h_addr_list[0];
+  unsigned short server_port = client->port;
+  memset (&sin, 0, sizeof (sin));
+  sin.sin_family = AF_INET;
+  sin.sin_addr.s_addr = server_addr;
+  sin.sin_port = htons (server_port);
+
+  printf("Client connecting to server on host %s on port %d\n", client->host, server_port);
+  if (connect (sock, (struct sockaddr *) &sin, sizeof (sin))<0)
+    {
+      perror("cannot connect to server");
+      return 1;
+    }
+
+  printf("Client connected to server on host %s on port %d\n", client->host, server_port);
+  TCP_HANDLER handler = new_tcp_handler (sock);
+  client->handler = handler;
+  printf("Created new tcp handler in client\n");
+  return 0;
+}
+
+int destroy_tcp_client(TCP_CLIENT_CONN client)
+{
+  if (client)
+    {
+      destroy_tcp_handler (client->handler);
+      free(client);
+    }
+  return 0;
 }
 
 int tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len)
