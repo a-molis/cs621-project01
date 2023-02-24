@@ -2,13 +2,16 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "tcp_sock_handler.h"
 
 // TODO add free/destroy
 TCP_HANDLER new_tcp_handler(int sockfd) 
 {
   TCP_HANDLER handler = malloc(sizeof(struct TCP_SOCKET_HANDLER));
+  printf("sockfd at  new %d\n", sockfd);
   handler->sockfd = sockfd;
+  printf("sockfd at assignment %d\n", handler->sockfd);
   return handler; 
 }
 
@@ -32,10 +35,8 @@ int tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len)
           perror("tcp_recvn failed to recv enough data from socket");
           return 1;
         }
-       else if (received == 0 && total > 0)
-         return EOF;
        total += received;
-       return total;
+       printf("Total in recivn: %d\n", total);
     }
     return total;
 }
@@ -47,11 +48,13 @@ int tcp_sendn(TCP_HANDLER handler, char *buf, int buf_len)
   printf("total: %d,  len: %d\n", total, buf_len);
   while (total < buf_len)
     {
+      printf("Sockfd in sendn %d\n", handler->sockfd);
       printf("sending data %s\n", buf + total);
       int sent = send(handler->sockfd, buf + total, buf_len, 0);
-      printf("total sent in sendn %d\n", total);
       total += sent;
-    } 
+      printf("total sent in sendn %d\n", total);
+    }
+  printf("total: %d, buf_len: %d, total < buf_len: %d\n", total, buf_len, total < buf_len); 
   return 0;
 }
 

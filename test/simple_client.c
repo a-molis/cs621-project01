@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
   printf("Created new tcp handler in client\n");
   char test[6] = {'\0'};
   int received = tcp_recvn (handler, test, 6);
-  if (received) 
+  if (!received) 
     printf("Client failed to receive message from server from server %s\n", test);
   else
     printf("Client received message from server: %s\n", test);

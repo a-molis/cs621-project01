@@ -53,7 +53,7 @@ int main(int argc,char *argv[]) {
       abort (); 
     }
   printf("Server made  connection to client on port %d\n", server_port);
-  TCP_HANDLER handler = new_tcp_handler (sock);
+  TCP_HANDLER handler = new_tcp_handler (client_sock);
   printf("Sending data on server\n");
   char test[6] = "Hello\0";
   int sent = tcp_sendn(handler, test, 6);
