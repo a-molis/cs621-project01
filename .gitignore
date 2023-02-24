@@ -9,3 +9,4 @@ tags
 simple_client
 simple_server
 .gdb_history
+.DS_Store

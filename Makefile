@@ -8,7 +8,7 @@ conn=connection
 INC=include
 
 lib_ob=$(src)/$(conn)/tcp_sock_handler.o
-OBJ=$(test_dir)/test_tcp_sock_handler.o $(test_dir)/simple_client.o 
+OBJ=$(test_dir)/test_tcp_sock_handler.o $(test_dir)/simple_client.o $(test_dir)/simple_server.o
 test_bin=$(test_dir)/test_tcp_sock_handler $(test_dir)/simple_client $(test_dir)/simple_server
 test_run=$(test_dir)/test_runner.sh
 
@@ -16,8 +16,7 @@ exe=$(addprefix ./, $(test_bin))
 
 all: $(test_bin)
 
-libconn.so: $(lib_ob)
-	$(CC) $(CFLAGS) $< -shared -o $@
+simple_server: $(test_dir)/simple_server
 
 test: $(test_bin)
 	sh $(test_run) $(exe)
