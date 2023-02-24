@@ -101,13 +101,16 @@ int destroy_tcp_sever(TCP_SERVER server)
 TCP_CLIENT_CONN tcp_new_client(char *host, unsigned short port)
 {
   TCP_CLIENT_CONN client = malloc (sizeof (struct TCP_CLIENT_HANDLER));
+  TCP_HANDLER handler = new_tcp_handler (0);
   client->port = port;
   client->host = host;
+  client->handler = handler;
   return client;
 }
 
 int tcp_client_connect(TCP_CLIENT_CONN client)
 {
+  // TODO check if new error handling needed
   int sock = socket (PF_INET, SOCK_STREAM, 0);
 
   struct sockaddr_in sin;
@@ -127,8 +130,7 @@ int tcp_client_connect(TCP_CLIENT_CONN client)
     }
 
   printf("Client connected to server on host %s on port %d\n", client->host, server_port);
-  TCP_HANDLER handler = new_tcp_handler (sock);
-  client->handler = handler;
+  client->handler->sockfd = sock;
   printf("Created new tcp handler in client\n");
   return 0;
 }
@@ -147,17 +149,19 @@ int tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len)
 {
   printf("Trying to receive data with len %d\n", buf_len);
   int total = 0;
+  int remaining = buf_len;
   while (total < buf_len) 
     {
       printf("total %d\n", total);
-      int received = recv(handler->sockfd, buf + total, buf_len, 0);
+      int received = recv(handler->sockfd, buf + total, remaining, 0);
       if (received < 0)
         {
           perror("tcp_recvn failed to recv enough data from socket");
           return 1;
         }
-       total += received;
-       printf("Total in recivn: %d\n", total);
+      total += received;
+      remaining -= received;
+      printf("Total in recivn: %d\n", total);
     }
     return total;
 }
@@ -166,13 +170,20 @@ int tcp_sendn(TCP_HANDLER handler, char *buf, int buf_len)
 {
   printf("Sending with size %d\n", buf_len);
   int total = 0;
+  int remaining = buf_len;
   printf("total: %d,  len: %d\n", total, buf_len);
   while (total < buf_len)
     {
       printf("Sockfd in sendn %d\n", handler->sockfd);
       printf("sending data %s\n", buf + total);
-      int sent = send(handler->sockfd, buf + total, buf_len, 0);
+      int sent = send(handler->sockfd, buf + total, remaining, 0);
+      if (sent < 0)
+        {
+          printf("Error sending data from tcp_sendn");
+          return sent;
+        }
       total += sent;
+      remaining -= sent;
       printf("total sent in sendn %d\n", total);
     }
   printf("total: %d, buf_len: %d, total < buf_len: %d\n", total, buf_len, total < buf_len); 
