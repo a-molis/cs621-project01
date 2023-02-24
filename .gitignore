@@ -12,4 +12,3 @@ simple_server
 .DS_Store
 test/test_simple_client_server
 test/test_tcp_send
-test/test_tcp_send
