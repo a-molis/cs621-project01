@@ -27,8 +27,9 @@ int main(int argc, char *argv[]) {
     
   printf("Client connected to server on host %s on port %d\n", argv[1], server_port); 
   TCP_HANDLER handler = new_tcp_handler (sock);
+  printf("Created new tcp handler in client\n");
   char test[6] = {'\0'};
-  size_t received = tcp_recvn (handler, test, 6);
+  int received = tcp_recvn (handler, test, 6);
   if (received) 
     printf("Client failed to receive message from server from server %s\n", test);
   else

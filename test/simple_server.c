@@ -35,7 +35,7 @@ int main(int argc,char *argv[]) {
     }
 
   printf("Bound server to port %d\n", server_port);
-  if (listen (sock, 5) < 0) 
+  if (listen (sock, 10) < 0) 
     { 
       perror ("error listening"); 
       abort ();
@@ -46,6 +46,7 @@ int main(int argc,char *argv[]) {
 
   printf("Server waiting for incoming connection on port %d\n", server_port);
   client_sock = accept (sock, (struct sockaddr *)&addr, &addr_len); 
+  printf("Server made new connection\n");
   if (client_sock < 0)
     {
       perror ("error accepting connection");
@@ -53,8 +54,9 @@ int main(int argc,char *argv[]) {
     }
   printf("Server made  connection to client on port %d\n", server_port);
   TCP_HANDLER handler = new_tcp_handler (sock);
+  printf("Sending data on server\n");
   char test[6] = "Hello\0";
-  size_t sent = tcp_sendn(handler, test, 6);
+  int sent = tcp_sendn(handler, test, 6);
   printf("Server sent data to client on port %d\n", server_port);
   if (sent) 
     printf("server failed to send hello from server\n");

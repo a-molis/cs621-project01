@@ -23,7 +23,7 @@ test: $(test_bin)
 	sh $(test_run) $(exe)
 
 $(OBJ): %.o: %.c
-	$(CC) $(CFLAGS) -c $< $(LDFLAGS) -o $@ 
+	$(CC) $(CFLAGS) -c $< -o $@ 
 
 $(OBJ): $(lib_ob)
 
