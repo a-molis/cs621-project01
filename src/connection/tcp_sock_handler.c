@@ -202,14 +202,14 @@ int tcp_send(TCP_HANDLER handler, char *buf, int buf_len)
   return 0;
 }
 
-int tcp_recv(TCP_HANDLER handler, char **buf, int buf_len)
+int tcp_recv(TCP_HANDLER handler, char **buf)
 {
   char num_buf[4];
   int recv_len = tcp_recvn(handler, num_buf, 4); 
   if (recv_len < 0)
     {
-      perror("tcp_recvn failed to recv enough data\
-          from socket when getting length");
+      perror("tcp_recvn failed to recv enough data "
+             "from socket when getting length");
       return 1;
     }
   else if (recv_len == 0)
@@ -224,8 +224,8 @@ int tcp_recv(TCP_HANDLER handler, char **buf, int buf_len)
   int received = tcp_recvn(handler, *buf, size); 
   if (received < 0)
     {
-      perror("tcp_recv failed to recv enough data \
-          from socket when getting data");
+      perror("tcp_recv failed to recv enough data "
+             "from socket when getting data");
       return 1;
     }
   else if (recv_len == 0)
