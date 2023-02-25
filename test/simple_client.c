@@ -22,20 +22,28 @@ int main(int argc, char *argv[]) {
     sin.sin_addr.s_addr = inet_addr("127.0.0.1");
     sin.sin_port = htons (port);
     sin.sin_family = AF_INET;
-    if (connect (sock, (struct sockaddr *) &sin, sizeof (sin)) < 0)
-      {
-        perror ("failed to connect to server from client\n");
-        abort ();
-      }
+//    int conn;
+//    if (conn = connect (sock, (struct sockaddr *) &sin, sizeof (sin)) < 0)
+//      {
+//        perror ("failed to connect to server from client\n");
+//        abort ();
+//      }
+//      printf("conn %d\n", conn);
     printf("connected to server from client\n");
-    char *test_message = "test hello hello";
-    int sent = sendto (sock, test_message, 1000, 0, (struct sockaddr *) NULL, sizeof (sin));
+    char *test_message = "start";
+    int sent = sendto (sock, test_message, 5, 0, (struct sockaddr *) &sin, sizeof (sin));
     if (sent < 0)
       {
         perror ("Unable to send message");
         abort ();
       }
+
     printf("Sent %d bytes of data\n", sent);
+    char confirm[8] = { '\0' };
+    socklen_t len = sizeof (sin);
+    ssize_t received = recvfrom (sock, confirm, 8, 0, (struct sockaddr *) &sin, &len);
+    printf("Client received %zu bytes from the server with message %s\n", received, confirm);
+    close(sock);
 //  printf ("Running test with server %s on port %s in thread\n", host, argv[2]);
 //
 //  UDP_CLIENT_CONN client = udp_new_client (host, port);

@@ -40,11 +40,21 @@ int main(int argc,char *argv[]) {
 
   printf("Bound server to port %d\n", server_port);
 
-  char start[4] = {'\0'};
-  int struct_sz = sizeof (sout);
-  int received = recvfrom (sockfd, start, 4, 0, (struct sockaddr *) &sout, &struct_sz);
+  char start[5] = {'\0'};
+  socklen_t struct_sz = sizeof (sout);
+  ssize_t received = recvfrom (sockfd, start, 5, 0, (struct sockaddr *) &sout, &struct_sz);
 //  int received = udp_recvfrom_n (server->handler, start, 4);
-  printf("Server received initial message with %d bytes\n", received);
+  printf("Server received initial message with %lu bytes %s \n", received, start);
+
+
+  char *test_message = "confirm";
+  ssize_t sent = sendto (sockfd, test_message, 8, 0, (struct sockaddr *) &sout, sizeof (sout));
+  if (sent < 0)
+    {
+      perror ("Unable to send message");
+      abort ();
+    }
+  printf("Server sent %zu bytes to client\n", sent);
   close(sockfd);
 //
 //  char test[6] = "Hello\0";
