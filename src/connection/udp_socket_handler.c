@@ -112,8 +112,7 @@ UDP_CLIENT_CONN udp_new_client(char *ip_address, unsigned short port)
 int udp_client_connect(UDP_CLIENT_CONN client)
 {
   // TODO check if new error handling needed
-  int sock = socket (AF_INET, SOCK_DGRAM, 0);
-
+  int sock;
   if ((sock = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
     {
       perror ("couldn’t create TCP socket");
