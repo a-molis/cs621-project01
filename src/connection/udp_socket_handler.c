@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include "udp_sock_handler.h"
 
+int udp_setup_client (UDP_CLIENT_CONN client);
+
 // TODO add free/destroy
 UDP_HANDLER udp_new_handler(int sockfd)
 {
@@ -132,16 +134,28 @@ int udp_client_connect(UDP_CLIENT_CONN client)
   client->handler->addr = &sin;
   client->handler->addr_len = sizeof (sin);
 
-  char *test_message = "start";
+
   client->handler->sockfd = sock;
-  int sent = udp_sendto (client->handler, test_message, 5);
-
-  printf("Sent success %d\n", sent);
-  char *confirm = "foo";
-  ssize_t received = udp_recvfrom (client->handler, &confirm);
-  printf("Client received %zu bytes from the server with message %s\n", received, confirm);
-
+  char *test_message = "start";
+  int setup = udp_setup_client (client);
+  printf("setup %d\n", setup);
+  if (setup)
+    return 1;
   printf("Created new upd handler in client\n");
+  return 0;
+}
+
+int udp_setup_client (UDP_CLIENT_CONN client)
+{
+  char *mess = "start";
+  int sent = udp_sendto (client->handler, mess, 5);
+  if (sent)
+    return 1;
+  char *confirm = "foo";
+  int received = udp_recvfrom (client->handler, &confirm);
+  if (received)
+    return 1;
+  printf("Client received %d bytes from the server with message %s\n", received, confirm);
   return 0;
 }
 
