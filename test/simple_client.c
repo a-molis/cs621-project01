@@ -14,8 +14,13 @@ int main(int argc, char *argv[]) {
       printf ("Unable to connect to server %s on port %d\n", host, port);
       abort ();
     }
+  printf("Client sending initial message to server\n");
+  char start[6] = "start\0";
+  int sent = udp_sendto_n (client->handler, (char *) &start, 6);
+  printf("Client sent initial message with %d bytes\n", sent);
   char test[6] = {'\0'};
   int received = udp_recvfrom_n (client->handler, test, 6);
+  printf("Client received initial message with %d bytes\n", received);
   if (!received)
     printf("Client failed to receive message from server from server %s\n", test);
   else

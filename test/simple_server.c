@@ -17,7 +17,11 @@ int main(int argc,char *argv[]) {
       perror ("Unable to start server");
       abort ();
     }
-  sleep(2);
+  printf("Server receiving initial message from client\n");
+  char start[6] = {'\0'};
+  int received = udp_recvfrom_n (server->handler, start, 6);
+  printf("Server received initial message with %d bytes\n", received);
+
   char test[6] = "Hello\0";
   int sent = udp_sendto_n(server->handler, (char *) &test, 6);
   printf("Server sent data to client on port %d\n", server_port);

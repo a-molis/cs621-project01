@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <stdlib.h>
+#include <strings.h>
 #include <string.h>
 #include <unistd.h>
 #include "udp_sock_handler.h"
@@ -32,6 +33,7 @@ UDP_SERVER udp_new_server(int port)
 {
   UDP_SERVER server = malloc (sizeof (struct UDP_SOCKET_HANDLER));
   server->port = port;
+  server->handler = NULL;
   return server;
 }
 
@@ -53,8 +55,7 @@ int udp_server_start(UDP_SERVER server)
       perror ("couldn’t create TCP socket");
       abort ();
     }
-  UDP_HANDLER handler = udp_new_handler(sock);
-  server->handler = handler;
+  server->handler = udp_new_handler(sock);
   if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &optval,
                   sizeof (optval)) < 0)
     {
@@ -92,14 +93,14 @@ UDP_CLIENT_CONN udp_new_client(char *host, unsigned short port)
 int udp_client_connect(UDP_CLIENT_CONN client)
 {
   // TODO check if new error handling needed
-  int sock = socket (PF_INET, SOCK_STREAM, 0);
+  int sock = socket (PF_INET, SOCK_DGRAM, 0);
 
   struct sockaddr_in sin;
   struct hostent *host = gethostbyname (client->host);
   in_addr_t server_addr = *(in_addr_t *) host->h_addr_list[0];
   unsigned short server_port = client->port;
   memset (&sin, 0, sizeof (sin));
-  sin.sin_family = AF_INET;
+  sin.sin_family = PF_INET;
   sin.sin_addr.s_addr = server_addr;
   sin.sin_port = htons (server_port);
   client->handler->addr = &sin;
@@ -108,7 +109,7 @@ int udp_client_connect(UDP_CLIENT_CONN client)
   printf("Client connecting to server on host %s on port %d\n", client->host, server_port);
   if (connect (sock, (struct sockaddr *) &sin, sizeof (sin))<0)
     {
-      perror("cannot connect to server");
+      perror("Cannot connect to server");
       return 1;
     }
 
@@ -132,6 +133,14 @@ int udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len)
 {
   int total = 0;
   int remaining = buf_len;
+
+  if (handler->addr == NULL)
+    {
+      printf("addr null\n");
+      struct sockaddr_in new_addr;
+      handler->addr = &new_addr;
+      handler->addr_len = sizeof (*handler->addr);
+    }
   while (total < buf_len)
     {
       // TODO see if need to change to ssize_t
