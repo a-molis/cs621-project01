@@ -10,32 +10,12 @@
 int main(int argc, char *argv[]) {
   char *ip_address = argv[1];
   unsigned short port = atoi (argv[2]);
-  int sock;
-  if ((sock = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
+  UDP_CLIENT_CONN client = udp_new_client (ip_address, port);
+  int connected = udp_client_connect(client);
+  if (connected)
     {
-      perror ("couldn’t create TCP socket");
-      abort ();
+      printf("Client unable to connect to server");
     }
-  printf ("set up client socket\n");
-  struct sockaddr_in sin;
-  memset (&sin, 0, sizeof (sin));
-  sin.sin_addr.s_addr = inet_addr(ip_address);
-  sin.sin_port = htons (port);
-  sin.sin_family = AF_INET;
-  printf("connected to server from client\n");
-  char *test_message = "start";
-  int sent = sendto (sock, test_message, 5, 0, (struct sockaddr *) &sin, sizeof (sin));
-  if (sent < 0)
-    {
-      perror ("Unable to send message");
-      abort ();
-    }
-
-  printf("Sent %d bytes of data\n", sent);
-  char confirm[8] = { '\0' };
-  socklen_t len = sizeof (sin);
-  ssize_t received = recvfrom (sock, confirm, 8, 0, (struct sockaddr *) &sin, &len);
-  printf("Client received %zu bytes from the server with message %s\n", received, confirm);
-  close(sock);
+  udp_destroy_client (client);
   return 0;
 }

@@ -20,7 +20,7 @@ struct UDP_SERVER_HANDLER
 
 struct UDP_CLIENT_HANDLER
 {
-    char *host;
+    char *ip_address;
     int port;
     UDP_HANDLER handler;
 };
@@ -42,7 +42,7 @@ UDP_HANDLER udp_server_next_connection(UDP_SERVER server);
 int udp_server_destroy (UDP_SERVER server);
 
 // Client functions
-UDP_CLIENT_CONN udp_new_client(char *host, unsigned short port);
+UDP_CLIENT_CONN udp_new_client(char *ip_address, unsigned short port);
 int udp_client_connect(UDP_CLIENT_CONN client);
 int udp_destroy_client(UDP_CLIENT_CONN client);
 

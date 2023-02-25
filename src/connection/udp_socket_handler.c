@@ -34,6 +34,8 @@ UDP_SERVER udp_new_server(int port)
   UDP_SERVER server = malloc (sizeof (struct UDP_SOCKET_HANDLER));
   server->port = port;
   server->handler = NULL;
+  server->handler = udp_new_handler(0);
+  server->handler->addr = NULL;
   return server;
 }
 
@@ -55,38 +57,53 @@ int udp_server_start(UDP_SERVER server)
       perror ("couldn’t create TCP socket");
       abort ();
     }
-  server->handler = udp_new_handler(sock);
-  server->handler->addr = NULL;
-  if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &optval,
-                  sizeof (optval)) < 0)
-    {
-      perror ("Could not resuse address");
-      abort ();
-    }
+  server->handler->sockfd = sock;
+//  if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &optval,
+//                  sizeof (optval)) < 0)
+//    {
+//      perror ("Could not resuse address");
+//      abort ();
+//    }
   printf("Set up server socket\n");
-  struct sockaddr_in sin;
+  struct sockaddr_in sin, sout;
   memset (&sin, 0, sizeof (sin));
-  sin.sin_addr.s_addr = htonl (INADDR_ANY);
+  sin.sin_addr.s_addr = INADDR_ANY;
   sin.sin_port = htons (server->port);
+
+
   sin.sin_family = AF_INET;
+
   printf("Binding server to port %d\n", server->port);
   if (bind (sock, (struct sockaddr *) &sin, sizeof (sin)) < 0)
     {
       perror ("cannot bind socket to address");
       return 1;
     }
-
   printf("Bound server to port %d\n", server->port);
+  char start[5] = {'\0'};
+  socklen_t struct_sz = sizeof (sout);
+  ssize_t received = recvfrom (sock, start, 5, 0, (struct sockaddr *) &sout, &struct_sz);
+  printf("Server received initial message with %lu bytes %s \n", received, start);
+
+
+  char *test_message = "confirm";
+  ssize_t sent = sendto (sock, test_message, 8, 0, (struct sockaddr *) &sout, sizeof (sout));
+  if (sent < 0)
+    {
+      perror ("Unable to send message");
+      abort ();
+    }
+  printf("Server sent %zu bytes to client\n", sent);
   return 0;
 }
 
-UDP_CLIENT_CONN udp_new_client(char *host, unsigned short port)
+UDP_CLIENT_CONN udp_new_client(char *ip_address, unsigned short port)
 {
   UDP_CLIENT_CONN client = malloc (sizeof (struct UDP_CLIENT_HANDLER));
   UDP_HANDLER handler = udp_new_handler (0);
   handler->addr = NULL;
   client->port = port;
-  client->host = host;
+  client->ip_address = ip_address;
   client->handler = handler;
   return client;
 }
@@ -97,32 +114,35 @@ int udp_client_connect(UDP_CLIENT_CONN client)
   // TODO check if new error handling needed
   int sock = socket (AF_INET, SOCK_DGRAM, 0);
 
+  if ((sock = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
+    {
+      perror ("couldn’t create TCP socket");
+      abort ();
+    }
+  printf ("set up client socket\n");
+
   struct sockaddr_in sin;
-  struct hostent *host = gethostbyname (client->host);
-  in_addr_t server_addr = *(in_addr_t *) host->h_addr_list[0];
-  unsigned short server_port = client->port;
   memset (&sin, 0, sizeof (sin));
+  sin.sin_addr.s_addr = inet_addr(client->ip_address);
+  sin.sin_port = htons (client->port);
   sin.sin_family = AF_INET;
-  sin.sin_addr.s_addr = server_addr;
-  sin.sin_port = htons (server_port);
+
   client->handler->addr = &sin;
   client->handler->addr_len = sizeof (sin);
 
-  printf("Client connecting to server on host %s on port %d with sock %d\n", client->host, server_port, sock);
-  if (connect (sock, (struct sockaddr *) &sin, sizeof (sin))<0)
-    {
-      perror("Cannot connect to server");
-      return 1;
-    }
-  char *test_send = "Foo\0";
-  int sent = sendto(sock, test_send, 4, 0, (struct sockaddr*)NULL, sizeof(sin));
+  char *test_message = "start";
+  int sent = sendto (sock, test_message, 5, 0, (struct sockaddr *) &sin, sizeof (sin));
   if (sent < 0)
     {
-      perror ("Error sending initall data from client");
+      perror ("Unable to send message");
       abort ();
     }
-  printf("Sent data %d\n", sent);
-  printf("Client connected to server on host %s on port %d\n", client->host, server_port);
+
+  printf("Sent %d bytes of data\n", sent);
+  char confirm[8] = { '\0' };
+  socklen_t len = sizeof (sin);
+  ssize_t received = recvfrom (sock, confirm, 8, 0, (struct sockaddr *) &sin, &len);
+  printf("Client received %zu bytes from the server with message %s\n", received, confirm);
   client->handler->sockfd = sock;
   printf("Created new upd handler in client\n");
   return 0;
