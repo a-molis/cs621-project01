@@ -51,6 +51,7 @@ int udp_server_destroy(UDP_SERVER server)
   return 0;
 }
 
+// TODO decouple start and initial client handler
 int udp_server_start(UDP_SERVER server)
 {
   int sock, optval = 1;
