@@ -13,6 +13,7 @@ struct args {
     char output[1024];
     int started_client;
     int started_server;
+    int input_len;
 };
 
 void *run_server(void *inputs)
@@ -25,8 +26,11 @@ void *run_server(void *inputs)
   if (server_args->started_server)
     return 0;
 
-  //int sent_success = udp_sendto_n(server->handler, )
-
+  char *test = "foo";
+  int success = udp_recvfrom (server->handler, &test);
+  if (success)
+    printf("Failed to send test data from server to client\n");
+  strcpy (server_args->output, test);
   if (udp_server_destroy(server))
     printf ("Failed to destroy server handler");
 
@@ -43,29 +47,34 @@ void *run_client(void *inputs)
   server_args->started_client = udp_client_connect (client);
   printf("started client in thread %d\n", server_args->started_client);
 
+  int sent_success = udp_sendto (client->handler,
+                                 server_args->input, server_args->input_len);
+  if (sent_success)
+    printf("Failed to send test data from server to client\n");
   return 0;
 }
 
 int main() {
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
-  server_args->port =  "12055";
+  server_args->port =  "5000";
   server_args->host =  "127.0.0.1";
   server_args->input =  "hello";
+  server_args->input_len = 6;
   server_args->started_client = 1;
   server_args->started_client = 1;
-
 
   pthread_create (&server_thread, NULL, (void *) &run_server, (void *) server_args);
   sleep (1);
   pthread_create (&client_thread, NULL, (void *) &run_client, (void *) server_args);
   pthread_join(client_thread, NULL);
   pthread_join(server_thread, NULL);
-  int success = 1;
+  int success = 0;
   printf("started server in outside %d\n", server_args->started_server);
   printf("started client in outside %d\n", server_args->started_client);
-  if (!server_args->started_client || !server_args->started_server)
-    success = 0;
+  if (server_args->started_client || server_args->started_server ||
+  (strcmp(server_args->input, server_args->output) != 0))
+    success = 1;
   printf ("Copying data input: %s output: %s\n", server_args->input, server_args->output);
   free(server_args);
   printf("Success = %d\n", success);

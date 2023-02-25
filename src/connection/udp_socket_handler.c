@@ -70,8 +70,10 @@ int udp_server_start(UDP_SERVER server)
   sin.sin_addr.s_addr = INADDR_ANY;
   sin.sin_port = htons (server->port);
 
-
   sin.sin_family = AF_INET;
+  socklen_t struct_sz = sizeof (sout);
+  server->handler->addr = &sout;
+  server->handler->addr_len = struct_sz;
 
   printf("Binding server to port %d\n", server->port);
   if (bind (sock, (struct sockaddr *) &sin, sizeof (sin)) < 0)
@@ -80,14 +82,15 @@ int udp_server_start(UDP_SERVER server)
       return 1;
     }
   printf("Bound server to port %d\n", server->port);
-  char start[5] = {'\0'};
-  socklen_t struct_sz = sizeof (sout);
-  ssize_t received = recvfrom (sock, start, 5, 0, (struct sockaddr *) &sout, &struct_sz);
-  printf("Server received initial message with %lu bytes %s \n", received, start);
+  char *start = "start";
 
+//  ssize_t received = recvfrom (sock, start, 5, 0, (struct sockaddr *) &sout, &struct_sz);
+  ssize_t received = udp_recvfrom (server->handler, &start);
+  printf("Server received initial message with %lu bytez %s \n", received, start);
 
   char *test_message = "confirm";
-  ssize_t sent = sendto (sock, test_message, 8, 0, (struct sockaddr *) &sout, sizeof (sout));
+//  ssize_t sent = sendto (sock, test_message, 8, 0, (struct sockaddr *) &sout, sizeof (sout));
+  ssize_t sent = udp_sendto(server->handler, test_message, 8);
   if (sent < 0)
     {
       perror ("Unable to send message");
@@ -131,11 +134,11 @@ int udp_client_connect(UDP_CLIENT_CONN client)
 
   char *test_message = "start";
   client->handler->sockfd = sock;
-  int sent = udp_sendto_n (client->handler, test_message, 5);
+  int sent = udp_sendto (client->handler, test_message, 5);
 
   printf("Sent success %d\n", sent);
-  char confirm[8] = { '\0' };
-  ssize_t received = udp_recvfrom_n (client->handler, confirm, 8);
+  char *confirm = "foo";
+  ssize_t received = udp_recvfrom (client->handler, &confirm);
   printf("Client received %zu bytes from the server with message %s\n", received, confirm);
 
   printf("Created new upd handler in client\n");
@@ -195,4 +198,57 @@ int udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len)
       printf("Total in udp_recvfrom_n: %d\n", total);
     }
   return total;
+}
+
+int udp_sendto(UDP_HANDLER handler, char *buf, int buf_len)
+{
+  printf("Sending data with udp_sendto\n");
+  char num_buf[4];
+  uint32_t len_nb = htonl(buf_len);
+  num_buf[3] = (len_nb >> 0) & 0xFF;
+  num_buf[2] = (len_nb >> 8) & 0xFF;
+  num_buf[1] = (len_nb >> 16) & 0xFF;
+  num_buf[0] = (len_nb >> 24) & 0xFF;
+  int sent_size = udp_sendto_n(handler, num_buf, 4);
+  if (sent_size)
+    {
+      perror ("Error with udp_sendto_n failed to sent size");
+      return 1;
+    }
+  int sent_data = udp_sendto_n(handler, buf, buf_len);
+  if (sent_data)
+    {
+      perror("Error sending data with tcp_send");
+      return 1;
+    }
+  return 0;
+}
+
+int udp_recvfrom(UDP_HANDLER handler, char **buf)
+{
+  char num_buf[4];
+  int recv_len = udp_recvfrom_n (handler, num_buf, 4);
+  if (recv_len < 0)
+    {
+      perror ("tcp_recvn failed to recv enough data "
+             "from socket when getting length");
+      return 1;
+    }
+  else if (recv_len == 0)
+    return EOF;
+  uint32_t len_nb = (num_buf[0] << 24)
+                    | (num_buf[1] << 16)
+                    | (num_buf[2] << 8)
+                    | (num_buf[3] << 0);
+  int size = ntohl (len_nb);
+
+  *buf = malloc (sizeof(char) * size);
+  int received = udp_recvfrom_n (handler, *buf, size);
+  if (received < 0)
+    {
+      perror ("tcp_recv failed to recv enough data "
+             "from socket when getting data");
+      return 1;
+    }
+  return 0;
 }
