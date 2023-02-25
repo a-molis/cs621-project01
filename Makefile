@@ -7,11 +7,11 @@ src=src
 conn=connection
 INC=include
 
-lib_ob=$(src)/$(conn)/tcp_sock_handler.o
-OBJ=$(test_dir)/test_tcp_sock_handler.o $(test_dir)/simple_client.o $(test_dir)/simple_server.o $(test_dir)/test_simple_client_server.o $(test_dir)/test_tcp_send.o
-test_bin=$(test_dir)/test_tcp_sock_handler $(test_dir)/simple_client $(test_dir)/simple_server
+lib_ob=$(src)/$(conn)/tcp_sock_handler.o $(src)/$(conn)/udp_socket_handler.o
+OBJ=$(test_dir)/simple_client.o $(test_dir)/simple_server.o $(test_dir)/test_simple_client_server.o $(test_dir)/test_tcp_send.o test/test_simple_udp_conn.o
+test_bin=$(test_dir)/simple_client $(test_dir)/simple_server
 test_run=$(test_dir)/test_runner.sh
-test_files=$(test_dir)/test_simple_client_server $(test_dir)/test_tcp_send
+test_files=$(test_dir)/test_simple_client_server $(test_dir)/test_tcp_send test/test_simple_udp_conn
 exe=$(addprefix ./, $(test_files))
 
 all: $(test_bin) $(test_files)
@@ -22,7 +22,7 @@ test: $(test_files)
 	sh $(test_run) $(exe)
 
 $(OBJ): %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJ): $(lib_ob)
 
