@@ -22,7 +22,10 @@ void *run_server(void *inputs)
 
   UDP_SERVER server = udp_new_server (server_port);
   server_args->started_server = udp_server_start (server);
-  printf("started server in thread %d\n", server_args->started_server);
+  if (server_args->started_server)
+    return 0;
+
+  //int sent_success = udp_sendto_n(server->handler, )
 
   if (udp_server_destroy(server))
     printf ("Failed to destroy server handler");

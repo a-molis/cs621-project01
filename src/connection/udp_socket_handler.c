@@ -130,19 +130,14 @@ int udp_client_connect(UDP_CLIENT_CONN client)
   client->handler->addr_len = sizeof (sin);
 
   char *test_message = "start";
-  int sent = sendto (sock, test_message, 5, 0, (struct sockaddr *) &sin, sizeof (sin));
-  if (sent < 0)
-    {
-      perror ("Unable to send message");
-      abort ();
-    }
-
-  printf("Sent %d bytes of data\n", sent);
-  char confirm[8] = { '\0' };
-  socklen_t len = sizeof (sin);
-  ssize_t received = recvfrom (sock, confirm, 8, 0, (struct sockaddr *) &sin, &len);
-  printf("Client received %zu bytes from the server with message %s\n", received, confirm);
   client->handler->sockfd = sock;
+  int sent = udp_sendto_n (client->handler, test_message, 5);
+
+  printf("Sent success %d\n", sent);
+  char confirm[8] = { '\0' };
+  ssize_t received = udp_recvfrom_n (client->handler, confirm, 8);
+  printf("Client received %zu bytes from the server with message %s\n", received, confirm);
+
   printf("Created new upd handler in client\n");
   return 0;
 }
@@ -175,7 +170,8 @@ int udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len)
       total += sent;
       remaining -= sent;
     }
-    return 0;
+  printf("Sent %d bytes of data\n", total);
+  return 0;
 }
 
 int udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len)
@@ -183,13 +179,6 @@ int udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len)
   printf("Trying to receive data with len %d from udp_recvfrom_n\n", buf_len);
   int total = 0;
   int remaining = buf_len;
-  if (handler->addr == NULL)
-    {
-      printf("addr null creating new addr\n");
-      struct sockaddr_in new_addr;
-      handler->addr = &new_addr;
-      handler->addr_len = sizeof (*handler->addr);
-    }
   while (total < buf_len)
     {
       printf("udp_recvfrom_n total %d\n", total);
