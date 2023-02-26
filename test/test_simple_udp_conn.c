@@ -60,7 +60,7 @@ void *run_client(void *inputs)
 int main() {
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
-  server_args->port =  "5000";
+  server_args->port =  "2000";
   server_args->host =  "127.0.0.1";
   server_args->input =  "hello";
   server_args->input_len = 6;
