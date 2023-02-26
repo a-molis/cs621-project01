@@ -26,14 +26,15 @@ void *run_server(void *inputs)
   if (server_args->started_server)
     return 0;
 
-  char *test = "foo";
-  int success = udp_recvfrom (server->handler, &test);
+  char *dummy = "";
+  char **test = &dummy;
+  int success = udp_recvfrom (server->handler, test);
   if (success)
     printf("Failed to send test data from server to client\n");
-  strcpy (server_args->output, test);
+  strcpy (server_args->output, *test);
   if (udp_server_destroy(server))
     printf ("Failed to destroy server handler");
-
+  free(*test);
   return 0;
 }
 
