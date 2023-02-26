@@ -30,7 +30,7 @@ TCP_HANDLER new_tcp_handler(int socket_fd);
 int tcp_sendn(TCP_HANDLER handler, char *buf, int buf_len);
 int tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len);
 int tcp_send(TCP_HANDLER handler, char *buf, int buf_len);
-int tcp_recv(TCP_HANDLER handler, char **buf);
+int tcp_recv(TCP_HANDLER handler, char *buf, int *output_len);
 int destroy_tcp_handler(TCP_HANDLER handler);
 
 // Server functions

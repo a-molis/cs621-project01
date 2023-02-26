@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "constants.h"
 #include "udp_sock_handler.h"
-
 
 struct args {
     char *host;
@@ -26,15 +26,14 @@ void *run_server(void *inputs)
   if (server_args->started_server)
     return 0;
 
-  char *dummy = "";
-  char **test = &dummy;
-  int success = udp_recvfrom (server->handler, test);
+  char test[MAX_UDP_SIZE];
+  int output_len = 0;
+  int success = udp_recvfrom (server->handler, test, &output_len);
   if (success)
     printf("Failed to send test data from server to client\n");
-  strcpy (server_args->output, *test);
+  strcpy (server_args->output, test);
   if (udp_server_destroy(server))
     printf ("Failed to destroy server handler");
-  free(*test);
   return 0;
 }
 

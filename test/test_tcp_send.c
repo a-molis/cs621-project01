@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "tcp_sock_handler.h"
+#include "constants.h"
 
 
 struct args {
@@ -56,13 +57,17 @@ void *run_client(void *inputs)
       printf ("Unable to connect to server %s on port %d\n", server_args->host, port);
       abort ();
     }
-  char *test = "foo";
-  printf("Test foo %s\n", test);
-  int received = tcp_recv (client->handler, &test);
-  if (!received)
+  char test[MAX_TCP_SIZE];
+  int output_len = 0;
+
+  // TODO check if needed
+  memset (test, '\0', sizeof (MAX_TCP_SIZE));
+  int received = tcp_recv (client->handler, test, &output_len);
+  if (received)
     printf("Client failed to receive message from server from server %s\n", test);
   else
     printf("Client received message from server: %s\n", test);
+  printf("Test foo %s with output_len of %d\n", test, output_len);
   if (destroy_tcp_client (client))
     printf("Failed to destroy client socket handler\n");
   printf ("Copying data test: %s output: %s\n", test, server_args->output);

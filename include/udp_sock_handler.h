@@ -32,7 +32,7 @@ UDP_HANDLER udp_new_handler(int socket_fd);
 int udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len);
 int udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len);
 int udp_sendto(UDP_HANDLER handler, char *buf, int buf_len);
-int udp_recvfrom(UDP_HANDLER handler, char **buf);
+int udp_recvfrom(UDP_HANDLER handler, char *buf, int *output_len);
 int udp_destroy_handler(UDP_HANDLER handler);
 
 // Server functions

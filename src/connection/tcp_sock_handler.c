@@ -213,8 +213,9 @@ int tcp_send(TCP_HANDLER handler, char *buf, int buf_len)
   return 0;
 }
 
-int tcp_recv(TCP_HANDLER handler, char **buf)
+int tcp_recv(TCP_HANDLER handler, char *buf, int *output_len)
 {
+  *output_len = 0;
   char num_buf[4];
   int recv_len = tcp_recvn(handler, num_buf, 4); 
   if (recv_len < 0)
@@ -230,9 +231,7 @@ int tcp_recv(TCP_HANDLER handler, char **buf)
                     | (num_buf[2] << 8)
                     | (num_buf[3] << 0);
   int size = ntohl(len_nb);
-
-  *buf = malloc(sizeof(char) * size);
-  int received = tcp_recvn(handler, *buf, size); 
+  int received = tcp_recvn(handler, buf, size);
   if (received < 0)
     {
       perror("tcp_recv failed to recv enough data "
@@ -240,7 +239,9 @@ int tcp_recv(TCP_HANDLER handler, char **buf)
       return 1;
     }
   else if (recv_len == 0)
-    return EOF; 
+    return EOF;
+  *output_len = size;
+  printf("size %d\n", size);
   return 0;
 }
 
