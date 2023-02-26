@@ -45,7 +45,8 @@ void *run_client(void *inputs)
   return 0;
 }
 
-int main() {
+int main()
+{
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
   server_args->port =  "12055";

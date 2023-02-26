@@ -14,3 +14,5 @@ test/test_simple_client_server
 test/test_tcp_send
 test/test_simple_udp_conn
 test/test_udp_setup
+*.dSYM
+compdetect_client
