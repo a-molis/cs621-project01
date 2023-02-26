@@ -1,0 +1,12 @@
+{
+  "server_ip": "127.0.0.1",
+  "udp_source_port": 2001,
+  "udp_dest_port": 2001,
+  "tcp_dest_head_syn_port": 12060,
+  "tcp_dest_tail_syn_port": 12061,
+  "tcp_probing_port": 12062,
+  "udp_payload_size": 1000,
+  "inter_measure_time": 15,
+  "udp_packet_train_len": 6000,
+  "udp_packet_ttl": 255
+}
