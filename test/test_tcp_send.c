@@ -67,7 +67,7 @@ void *run_client(void *inputs)
     printf("Client failed to receive message from server from server %s\n", test);
   else
     printf("Client received message from server: %s\n", test);
-  printf("Test foo %s with output_len of %d\n", test, output_len);
+  printf("Test udp_server_next_conn %s with output_len of %d\n", test, output_len);
   if (destroy_tcp_client (client))
     printf("Failed to destroy client socket handler\n");
   printf ("Copying data test: %s output: %s\n", test, server_args->output);
