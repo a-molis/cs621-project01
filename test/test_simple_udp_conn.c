@@ -25,15 +25,18 @@ void *run_server(void *inputs)
   server_args->started_server = udp_server_start (server);
   if (server_args->started_server)
     return 0;
-
+  UDP_HANDLER client_handler = udp_server_next_connection (server);
   char test[MAX_UDP_SIZE];
   int output_len = 0;
-  int success = udp_recvfrom (server->handler, test, &output_len);
+  int success = udp_recvfrom (client_handler, test, &output_len);
   if (success)
     printf("Failed to send test data from server to client\n");
   strcpy (server_args->output, test);
   if (udp_server_destroy(server))
-    printf ("Failed to destroy server handler");
+    printf ("Failed to destroy server client_handler");
+  if (udp_destroy_handler (client_handler)) {
+    printf("Failed to destroy client client_handler");
+  }
   return 0;
 }
 

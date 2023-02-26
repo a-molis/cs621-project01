@@ -12,7 +12,6 @@
 
 int udp_setup_client (UDP_CLIENT_CONN client);
 
-void udp_server_next_conn (UDP_SERVER server);
 // TODO add free/destroy
 UDP_HANDLER udp_new_handler(int sockfd)
 {
@@ -37,9 +36,7 @@ UDP_SERVER udp_new_server(int port)
 {
   UDP_SERVER server = malloc (sizeof (struct UDP_SOCKET_HANDLER));
   server->port = port;
-  server->handler = NULL;
-  server->handler = udp_new_handler(0);
-  server->handler->addr = NULL;
+  server->sockfd = 0;
   return server;
 }
 
@@ -47,7 +44,6 @@ int udp_server_destroy(UDP_SERVER server)
 {
   if (server)
     {
-      udp_destroy_handler(server->handler);
       free(server);
     }
   return 0;
@@ -62,7 +58,7 @@ int udp_server_start(UDP_SERVER server)
       perror ("couldn’t create TCP socket");
       abort ();
     }
-  server->handler->sockfd = sock;
+  server->sockfd = sock;
   if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &optval,
                   sizeof (optval)) < 0)
     {
@@ -70,15 +66,14 @@ int udp_server_start(UDP_SERVER server)
       abort ();
     }
   printf("Set up server socket\n");
-  struct sockaddr_in sin, sout;
+  struct sockaddr_in sin;
   memset (&sin, 0, sizeof (sin));
   sin.sin_addr.s_addr = INADDR_ANY;
   sin.sin_port = htons (server->port);
-
   sin.sin_family = AF_INET;
-  socklen_t struct_sz = sizeof (sout);
-  server->handler->addr = &sout;
-  server->handler->addr_len = struct_sz;
+
+  server->addr = &sin;
+  server->addr_len =  sizeof (sin);
 
   printf("Binding server to port %d\n", server->port);
   if (bind (sock, (struct sockaddr *) &sin, sizeof (sin)) < 0)
@@ -88,24 +83,29 @@ int udp_server_start(UDP_SERVER server)
     }
   printf("Bound server to port %d\n", server->port);
 
-  udp_server_next_conn (server);
   return 0;
 }
 
-void udp_server_next_conn (UDP_SERVER server)
+UDP_HANDLER udp_server_next_connection (UDP_SERVER server)
 {
+  struct sockaddr_in sout;
+  UDP_HANDLER handler = udp_new_handler (server->sockfd);
+  handler->addr = &sout;
+  handler->addr_len = sizeof (sout);
   char start[MAX_UDP_SIZE];
   int output_len = 0;
-  ssize_t received = udp_recvfrom (server->handler, start, &output_len);
+
+  ssize_t received = udp_recvfrom (handler, start, &output_len);
   printf("Server received initial message with %lu bytez %s \n", received, start);
   char *test_message = "confirm";
-  ssize_t sent = udp_sendto (server->handler, test_message, 8);
+  ssize_t sent = udp_sendto (handler, test_message, 8);
   if (sent < 0)
     {
       perror ("Unable to send message");
       abort ();
     }
   printf("Server sent %zu bytes to client\n", sent);
+  return handler;
 }
 
 UDP_CLIENT_CONN udp_new_client(char *ip_address, unsigned short port)

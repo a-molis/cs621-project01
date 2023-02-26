@@ -15,7 +15,9 @@ typedef struct UDP_SOCKET_HANDLER *UDP_HANDLER;
 struct UDP_SERVER_HANDLER
 {
     int port;
-    UDP_HANDLER handler;
+    int sockfd;
+    struct sockaddr_in *addr;
+    socklen_t addr_len;
 };
 
 struct UDP_CLIENT_HANDLER
