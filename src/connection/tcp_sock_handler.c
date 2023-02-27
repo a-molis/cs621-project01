@@ -199,12 +199,14 @@ int tcp_send(TCP_HANDLER handler, char *buf, int buf_len)
   int sent_size = tcp_sendn(handler, num_buf, 4);
   if (sent_size)
     {
+      printf("sent_size = %d\n", sent_size);
       perror ("Error with tcp_send failed to sent size");
       return 1;
     }
   int sent_data = tcp_sendn(handler, buf, buf_len);
   if (sent_data)
     {
+      printf("Sent_data = %d\n", sent_data);
       perror("Error sending data with tcp_send");
       return 1;
     }

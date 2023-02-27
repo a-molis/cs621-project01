@@ -6,8 +6,8 @@
 #include "udp_sock_handler.h"
 #include "tcp_sock_handler.h"
 #include "config.h"
+#include "compdetect.h"
 
-CONFIG server_pre_probe (int port);
 int run_server (int port);
 
 int main(int argc, char *argv[])
@@ -42,34 +42,5 @@ int run_server (int port)
 //  config_destroy(config);
 }
 
-CONFIG server_pre_probe (int port)
-{
-  TCP_SERVER server = tcp_new_server (port);
-  int started = tcp_server_start (server);
-  printf("started %d\n", started);
-  if (started)
-    {
-      perror ("Unable to start server in pre probe");
-      abort ();
-    }
-  TCP_HANDLER client_handler = tcp_server_next_connection (server);
-  char buf[MAX_TCP_SIZE];
-  int buf_len = 0;
-  int received = tcp_recv (client_handler, buf, &buf_len);
-  if (received)
-    {
-      perror ("Server failed to get config str from client");
-      abort ();
-    }
-  buf[buf_len] = '\0';
-  printf ("server received config\n\n %s \n", buf);
-
-  if (destroy_tcp_handler (client_handler) || destroy_tcp_sever (server))
-    {
-      perror ("Server failed to close tcp conn in pre probe");
-      abort ();
-    }
-  return NULL;
-}
 
 

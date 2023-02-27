@@ -21,5 +21,7 @@ typedef struct CONFIG_DATA *CONFIG;
 
 CONFIG config_new (char *config_str);
 void config_destroy(CONFIG config);
+int open_file (char *path, char *buf);
+CONFIG get_config (char *config_path, char *buf);
 
 #endif //CONFIG_H_

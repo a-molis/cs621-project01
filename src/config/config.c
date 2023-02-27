@@ -88,3 +88,39 @@ void parse_optional_params (CONFIG config, const cJSON *json)
   else
     config->udp_packet_ttl = udp_packet_ttl->valueint;
 }
+
+CONFIG get_config (char *config_path, char *buf)
+{
+  int opened = open_file(config_path, buf);
+  if (opened)
+    {
+      printf ("Failed to open config file\n");
+      exit (1);
+    }
+  // TODO send config to server
+  CONFIG config = config_new(buf);
+  return config;
+}
+
+int open_file (char *path, char *buf)
+{
+  FILE *fd = fopen(path, "r");
+  if (!fd)
+    {
+      printf("Failed to open file %s\n", path);
+      return 1;
+    }
+  int size = 1024;
+  size_t offset = 0;
+  while (fgets(buf + offset, size, fd) != NULL)
+    {
+      offset = strlen(buf);
+    }
+  if (fclose (fd))
+    {
+      perror ("Unable to close file");
+      abort ();
+    }
+  printf("\n %s\n", buf);
+  return 0;
+}
