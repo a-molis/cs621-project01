@@ -203,7 +203,7 @@ int tcp_send(TCP_HANDLER handler, char *buf, int buf_len)
       return 1;
     }
   int sent_data = tcp_sendn(handler, buf, buf_len);
-  if (sent_data == 0)
+  if (sent_data)
     {
       perror("Error sending data with tcp_send");
       return 1;
@@ -223,7 +223,10 @@ int tcp_recv(TCP_HANDLER handler, char *buf, int *output_len)
       return 1;
     }
   else if (recv_len == 0)
-    return EOF;
+    {
+      printf ("Received EOF from tcp_recvn\n");
+      return EOF;
+    }
   uint32_t len_nb = (num_buf[0] << 24)
                     | (num_buf[1] << 16)
                     | (num_buf[2] << 8)
