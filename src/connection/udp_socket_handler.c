@@ -75,13 +75,13 @@ int udp_server_start(UDP_SERVER server)
   server->addr = &sin;
   server->addr_len =  sizeof (sin);
 
-  printf("Binding server to port %d\n", server->port);
+  printf("Binding server to server_port %d\n", server->port);
   if (bind (sock, (struct sockaddr *) &sin, sizeof (sin)) < 0)
     {
       perror ("cannot bind socket to address");
       return 1;
     }
-  printf("Bound server to port %d\n", server->port);
+  printf("Bound server to server_port %d\n", server->port);
 
   return 0;
 }

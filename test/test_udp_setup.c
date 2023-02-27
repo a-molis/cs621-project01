@@ -7,7 +7,7 @@
 
 
 struct args {
-    char *host;
+    char *ip_addr;
     char *port;
     char *input;
     char output[1024];
@@ -35,10 +35,10 @@ void *run_server(void *inputs)
 void *run_client(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
-  printf ("Running test with server %s on port %s in thread\n", server_args->host, server_args->port);
+  printf ("Running test with server %s on server_port %s in thread\n", server_args->ip_addr, server_args->port);
 
   unsigned short port = atoi (server_args->port);
-  UDP_CLIENT_CONN client = udp_new_client (server_args->host, port);
+  UDP_CLIENT_CONN client = udp_new_client (server_args->ip_addr, port);
   server_args->started_client = udp_client_connect (client);
   printf("started client in thread %d\n", server_args->started_client);
 
@@ -50,7 +50,7 @@ int main()
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
   server_args->port =  "12055";
-  server_args->host =  "127.0.0.1";
+  server_args->ip_addr =  "127.0.0.1";
   server_args->input =  "hello";
   server_args->started_client = 1;
   server_args->started_client = 1;

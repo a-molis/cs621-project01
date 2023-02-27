@@ -18,8 +18,8 @@ struct TCP_SERVER_HANDLER
 
 struct TCP_CLIENT_HANDLER
 {
-    char *host;
-    int port;
+    char *host_ip;
+    int server_port;
     TCP_HANDLER handler;
 };
 
@@ -40,7 +40,7 @@ TCP_HANDLER tcp_server_next_connection(TCP_SERVER server);
 int destroy_tcp_sever(TCP_SERVER server);
 
 // Client functions
-TCP_CLIENT_CONN tcp_new_client(char *host, unsigned short port);
+TCP_CLIENT_CONN tcp_new_client(char *host_ip, unsigned short port);
 int tcp_client_connect(TCP_CLIENT_CONN client);
 int destroy_tcp_client(TCP_CLIENT_CONN client);
 

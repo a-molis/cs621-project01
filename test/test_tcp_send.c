@@ -8,7 +8,7 @@
 
 
 struct args {
-    char *host;
+    char *ip_addr;
     char *port;
     char *input;
     char output[1024];
@@ -30,7 +30,7 @@ void *run_server(void *inputs)
   TCP_HANDLER client_handler = tcp_server_next_connection (server);
   printf("Sending data on server\n");
   int sent = tcp_send (client_handler, server_args->input, 6);
-  printf("Server sent data to client on port %d\n", server_port);
+  printf("Server sent data to client on server_port %d\n", server_port);
   if (sent)
     printf("server failed to send hello from server\n");
   else
@@ -47,14 +47,14 @@ void *run_server(void *inputs)
 void *run_client(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
-  printf ("Running test with server %s on port %s in thread\n", server_args->host, server_args->port);
+  printf ("Running test with server %s on server_port %s in thread\n", server_args->ip_addr, server_args->port);
 
   unsigned short port = atoi (server_args->port);
-  TCP_CLIENT_CONN client = tcp_new_client (server_args->host, port);
+  TCP_CLIENT_CONN client = tcp_new_client (server_args->ip_addr, port);
   int connected = tcp_client_connect(client);
   if (connected)
     {
-      printf ("Unable to connect to server %s on port %d\n", server_args->host, port);
+      printf ("Unable to connect to server %s on server_port %d\n", server_args->ip_addr, port);
       abort ();
     }
   char test[MAX_TCP_SIZE];
@@ -80,7 +80,7 @@ int main() {
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
   server_args->port =  "12055";
-  server_args->host =  "localhost";
+  server_args->ip_addr =  "127.0.0.1";g
   server_args->input =  "hello";
 
   pthread_create (&server_thread, NULL, (void *) &run_server, (void *) server_args);
