@@ -239,7 +239,7 @@ int udp_sendto(UDP_HANDLER handler, char *buf, int buf_len)
   int sent_data = udp_sendto_n(handler, buf, buf_len);
   if (sent_data)
     {
-      perror("Error sending data with tcp_send");
+      perror("Error sending data with udp_sendto");
       return 1;
     }
   return 0;
