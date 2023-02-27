@@ -80,7 +80,7 @@ int main() {
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
   server_args->port =  "12055";
-  server_args->ip_addr =  "127.0.0.1";g
+  server_args->ip_addr =  "127.0.0.1";
   server_args->input =  "hello";
 
   pthread_create (&server_thread, NULL, (void *) &run_server, (void *) server_args);
