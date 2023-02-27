@@ -10,7 +10,7 @@ void parse_required_params (CONFIG config, const cJSON *json);
 
 CONFIG config_new (char *config_str)
 {
-  printf("starting config");
+  printf ("starting config");
   CONFIG config = malloc (sizeof (struct CONFIG_DATA));
   if (!config)
     {
@@ -28,7 +28,7 @@ CONFIG config_new (char *config_str)
   return config;
 }
 
-void config_destroy(CONFIG config)
+void config_destroy (CONFIG config)
 {
   if (config)
     free (config);
@@ -69,7 +69,7 @@ void parse_optional_params (CONFIG config, const cJSON *json)
   cJSON *udp_packet_ttl = cJSON_GetObjectItem (json, "udp_packet_ttl");
 
   if (!udp_payload_size || udp_payload_size->valueint == 0)
-      config->udp_payload_size = UDP_PAYLOAD_SIZE;
+    config->udp_payload_size = UDP_PAYLOAD_SIZE;
   else
     config->udp_payload_size = udp_payload_size->valueint;
 

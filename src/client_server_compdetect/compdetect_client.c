@@ -4,9 +4,11 @@
 #include <unistd.h>
 #include "constants.h"
 #include "udp_sock_handler.h"
+#include "tcp_sock_handler.h"
 #include "config.h"
 
 int open_file (char *path, char *buf);
+int client_pre_probe (CONFIG config, char *config_str);
 
 int main(int argc, char *argv[])
 {
@@ -24,9 +26,28 @@ int main(int argc, char *argv[])
       exit (1);
     }
   // TODO send config to server
-  struct CONFIG_DATA * config = config_new(buf);
+  CONFIG config = config_new(buf);
   printf ("config server ip %s\n", config->server_ip);
+
+  int pre_probe = client_pre_probe (config, buf);
   config_destroy(config);
+  return 0;
+}
+
+int client_pre_probe (CONFIG config, char *config_str)
+{
+  TCP_CLIENT_CONN client_conn = tcp_new_client (config->server_ip, config->tcp_probing_port);
+  int sent = tcp_send (client_conn->handler, config_str, strlen (config_str));
+  if (sent)
+    {
+      perror ("Client failed to send config as string");
+      abort ();
+    }
+  if (destroy_tcp_client (client_conn))
+    {
+      perror ("Client failed to destroy client socket handler");
+      abort ();
+    }
   return 0;
 }
 
