@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "cJSON.h"
 #include "constants.h"
 #include "udp_sock_handler.h"
+#include "config.h"
 
 int parse_config (char *path);
 int open_file (char *path, char *buf);
@@ -16,25 +16,21 @@ int main(int argc, char *argv[])
       printf ("Missing required arg config\n");
       exit (1);
     }
-  int parsed = parse_config(config_path);
-  return 0;
-}
-
-
-int parse_config (char *path)
-{
   char buf[MAX_TCP_SIZE];
-  int opened = open_file(path, buf);
+  int opened = open_file(config_path, buf);
   if (opened)
     {
-      perror ("Unable to open config file");
-      abort ();
+      printf ("Failed to open config file\n");
+      exit (1);
     }
-  cJSON *json = cJSON_ParseWithLength(buf, strlen (buf));
-  cJSON *server_ip = cJSON_GetObjectItem(json, "server_ip");
-  cJSON *foo = cJSON_GetObjectItem(json, "foo");
+  // TODO send config to server
+  struct CONFIG_DATA * config = config_new(buf);
+  printf ("config server ip %s\n", config->server_ip);
   return 0;
 }
+
+
+
 
 int open_file (char *path, char *buf)
 {
