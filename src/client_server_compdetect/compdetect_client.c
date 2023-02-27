@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "constants.h"
 #include "udp_sock_handler.h"
 #include "config.h"
 
-int parse_config (char *path);
 int open_file (char *path, char *buf);
 
 int main(int argc, char *argv[])
@@ -26,11 +26,9 @@ int main(int argc, char *argv[])
   // TODO send config to server
   struct CONFIG_DATA * config = config_new(buf);
   printf ("config server ip %s\n", config->server_ip);
+  config_destroy(config);
   return 0;
 }
-
-
-
 
 int open_file (char *path, char *buf)
 {
@@ -46,7 +44,11 @@ int open_file (char *path, char *buf)
     {
       offset = strlen(buf);
     }
-
+  if (fclose (fd))
+    {
+      perror ("Unable to close file");
+      abort ();
+    }
   printf("\n %s\n", buf);
   return 0;
 }

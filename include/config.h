@@ -20,5 +20,6 @@ struct CONFIG_DATA
 typedef struct CONFIG_DATA *CONFIG;
 
 CONFIG config_new (char *config_str);
+void config_destroy(CONFIG config);
 
 #endif //CONFIG_H_

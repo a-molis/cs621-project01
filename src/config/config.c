@@ -5,6 +5,9 @@
 #include "constants.h"
 #include "cJSON.h"
 
+void parse_optional_params (CONFIG config, const cJSON *json);
+void parse_required_params (CONFIG config, const cJSON *json);
+
 CONFIG config_new (char *config_str)
 {
   printf("starting config");
@@ -15,7 +18,24 @@ CONFIG config_new (char *config_str)
       abort ();
     }
   cJSON *json = cJSON_ParseWithLength (config_str, strlen (config_str));
+  parse_required_params (config, json);
+  if (!config)
+    {
+      perror ("Unable to create config");
+      abort ();
+    }
+  parse_optional_params (config, json);
+  return config;
+}
 
+void config_destroy(CONFIG config)
+{
+  if (config)
+    free (config);
+}
+
+void parse_required_params (CONFIG config, const cJSON *json)
+{
   // Required config parameters
   cJSON *server_ip = cJSON_GetObjectItem (json, "server_ip");
   cJSON *udp_source_port = cJSON_GetObjectItem (json, "udp_source_port");
@@ -38,8 +58,10 @@ CONFIG config_new (char *config_str)
   config->tcp_dest_head_syn_port = tcp_dest_head_syn_port->valueint;
   config->tcp_dest_tail_syn_port = tcp_dest_tail_syn_port->valueint;
   config->tcp_probing_port = tcp_probing_port->valueint;
+}
 
-
+void parse_optional_params (CONFIG config, const cJSON *json)
+{
   // Optional config parameters
   cJSON *udp_payload_size = cJSON_GetObjectItem (json, "udp_payload_size");
   cJSON *inter_measure_time = cJSON_GetObjectItem (json, "inter_measure_time");
@@ -65,6 +87,4 @@ CONFIG config_new (char *config_str)
     config->udp_packet_ttl = UDP_PACKET_TTL;
   else
     config->udp_packet_ttl = udp_packet_ttl->valueint;
-
-  return config;
 }
