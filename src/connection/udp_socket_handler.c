@@ -16,6 +16,11 @@ int udp_setup_client (UDP_CLIENT_CONN client);
 UDP_HANDLER udp_new_handler(int sockfd)
 {
   UDP_HANDLER handler = malloc (sizeof (struct UDP_SOCKET_HANDLER));
+  if (handler == NULL)
+    {
+      perror ("Unable to allocate memory for new UDP handler");
+      return NULL;
+    }
   printf("sock_fd at  new %d\n", sockfd);
   handler->sockfd = sockfd;
   printf("sock_fd at assignment %d\n", handler->sockfd);
@@ -35,6 +40,11 @@ int udp_destroy_handler(UDP_HANDLER handler)
 UDP_SERVER udp_new_server(int port)
 {
   UDP_SERVER server = malloc (sizeof (struct UDP_SOCKET_HANDLER));
+  if (server == NULL)
+    {
+      perror ("Unable to allocate memory for new UDP_SERVER");
+      return NULL;
+    }
   server->port = port;
   server->sockfd = 0;
   return server;
@@ -90,19 +100,29 @@ UDP_HANDLER udp_server_next_connection (UDP_SERVER server)
 {
   struct sockaddr_in sout;
   UDP_HANDLER handler = udp_new_handler (server->sockfd);
+  if (handler == NULL)
+    {
+      perror ("Failed to get next UDP connection for server");
+      return NULL;
+    }
   handler->addr = &sout;
   handler->addr_len = sizeof (sout);
   char start[MAX_UDP_SIZE];
   int output_len = 0;
 
-  ssize_t received = udp_recvfrom (handler, start, &output_len);
+  int received = udp_recvfrom (handler, start, &output_len);
+  if (received)
+    {
+      perror ("Unable to receive start message for setting up next conn for udp server");
+      return 1;
+    }
   printf("Server received initial message with %lu bytez %s \n", received, start);
   char *test_message = "confirm";
-  ssize_t sent = udp_sendto (handler, test_message, 8);
-  if (sent < 0)
+  int sent = udp_sendto (handler, test_message, 8);
+  if (sent)
     {
-      perror ("Unable to send message");
-      abort ();
+      perror ("Unable to send message to set up UDP next connection");
+      return NULL;
     }
   printf("Server sent %zu bytes to client\n", sent);
   return handler;

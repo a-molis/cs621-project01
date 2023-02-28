@@ -10,6 +10,7 @@
 
 int run_server (int port);
 
+
 int main(int argc, char *argv[])
 {
   char *server_port = argv[1];
@@ -33,14 +34,22 @@ int main(int argc, char *argv[])
 int run_server (int port)
 {
 
-  int pre_probe = server_pre_probe (port);
-  if (pre_probe)
+  CONFIG config = server_pre_probe (port);
+  if (config)
     {
       perror ("Server failed in pre probe step");
       abort ();
     }
+  int probe = server_probe (config);
+  if (probe)
+    {
+      perror ("Client failed to probe server");
+      abort ();
+    }
 //  config_destroy(config);
 }
+
+
 
 
 

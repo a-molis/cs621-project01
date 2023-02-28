@@ -98,4 +98,48 @@ int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
   return 0;
 }
 
+int server_probe (CONFIG config)
+{
+  UDP_SERVER udp_server = udp_new_server (config->udp_dest_port);
+  if (udp_server == NULL)
+    {
+      perror ("Unable to get new UDP server for server probe");
+      return 1;
+    }
+  int start = udp_server_start (udp_server);
+  if (start)
+    {
+      perror ("Failed to start UDP server for server probe");
+      return 1;
+    }
+  UDP_HANDLER client_handler = udp_server_next_connection (udp_server);
+  if (client_handler == NULL)
+    {
+      perror ("Failed to get next client connection for UDP probe");
+      return 1;
+    }
+  int low = receive_low_entropy_data (client_handler, config);
+  if (low)
+    {
+      perror ("Client failed to send low entropy data");
+      return 1;
+    }
+  return 0;
+}
 
+int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
+{
+  char *buf[config->udp_payload_size];
+  bzero (buf, config->udp_payload_size);
+  int sent_success = 0;
+  int sent_failed = 0;
+  for (int i = 0; i < config->udp_packet_train_len; i++)
+    {
+      int sent = udp_recvfrom_n (client_handler, buf, config->udp_payload_size);
+      if (sent)
+        sent_failed++;
+      else
+        sent_success++;
+    }
+  printf("Sent low entropy data received from client with %d success %d failed\n", sent_success, sent_failed);
+}
