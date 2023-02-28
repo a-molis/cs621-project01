@@ -5,6 +5,6 @@
 
 int client_pre_probe (CONFIG config, char *config_str);
 CONFIG server_pre_probe (int port);
-
+int client_probe(CONFIG config);
 
 #endif //_COMPDETECT_H_

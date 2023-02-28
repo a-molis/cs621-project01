@@ -61,3 +61,8 @@ CONFIG server_pre_probe (int port)
   CONFIG config = config_new (buf);
   return config;
 }
+
+int client_probe(CONFIG config)
+{
+
+}
