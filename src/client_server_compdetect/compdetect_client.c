@@ -34,5 +34,11 @@ void comp_client_run (char *config_path)
       perror ("Client failed to pre probe server");
       abort ();
     }
+  int probe = client_probe(config);
+  if (probe)
+    {
+      perror ("Client failed to probe server");
+      abort ();
+    }
   config_destroy(config);
 }

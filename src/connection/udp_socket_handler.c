@@ -111,6 +111,11 @@ UDP_HANDLER udp_server_next_connection (UDP_SERVER server)
 UDP_CLIENT_CONN udp_new_client(char *ip_address, unsigned short port)
 {
   UDP_CLIENT_CONN client = malloc (sizeof (struct UDP_CLIENT_HANDLER));
+    if (client == NULL)
+      {
+        perror ("Unable to malloc new udp_client_conn");
+        return NULL;
+      }
   UDP_HANDLER handler = udp_new_handler (0);
   handler->addr = NULL;
   client->port = port;

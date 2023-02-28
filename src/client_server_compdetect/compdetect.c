@@ -2,12 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <tcp_sock_handler.h>
+#include <udp_sock_handler.h>
+#include <strings.h>
 #include "compdetect.h"
 #include "config.h"
 #include "constants.h"
 
-
-
+int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config);
 int client_pre_probe (CONFIG config, char *config_str)
 {
   TCP_CLIENT_CONN client_conn = tcp_new_client (config->server_ip, config->tcp_probing_port);
@@ -64,5 +65,37 @@ CONFIG server_pre_probe (int port)
 
 int client_probe(CONFIG config)
 {
-
+  UDP_CLIENT_CONN udp_client = udp_new_client (config->server_ip, config->udp_dest_port);
+  if (udp_client == NULL)
+    {
+      perror ("Failed to create udp_client");
+      return 1;
+    }
+  int low = send_low_entropy_data (udp_client, config);
+  if (low)
+    {
+      perror ("Client failed to send low entropy data");
+      return 1;
+    }
+  return 0;
 }
+
+int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
+{
+  char *buf[config->udp_payload_size];
+  bzero (buf, config->udp_payload_size);
+  int sent_success = 0;
+  int sent_failed = 0;
+  for (int i = 0; i < config->udp_packet_train_len; i++)
+    {
+      int sent = udp_sendto_n (udp_client->handler, buf, config->udp_payload_size);
+      if (sent)
+        sent_failed++;
+      else
+        sent_success++;
+    }
+  printf("Sent low entropy data from client with %d success %d failed\n", sent_success, sent_failed);
+  return 0;
+}
+
+
