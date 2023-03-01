@@ -3,8 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <client.h>
-#include "tcp_sock_handler.h"
+#include "udp_sock_handler.h"
 #include "constants.h"
 #include "config.h"
 #include "compdetect.h"

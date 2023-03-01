@@ -34,6 +34,7 @@ int client_pre_probe (CONFIG config, char *config_str)
 
 CONFIG server_pre_probe (int port)
 {
+  printf("starting server pre-probe stage\n");
   TCP_SERVER server = tcp_new_server (port);
   int started = tcp_server_start (server);
   printf("started %d\n", started);
@@ -42,6 +43,7 @@ CONFIG server_pre_probe (int port)
       perror ("Unable to start server in pre probe");
       abort ();
     }
+  printf("TCP server started in server pre-probe stage\n");
   TCP_HANDLER client_handler = tcp_server_next_connection (server);
   char buf[MAX_TCP_SIZE];
   int buf_len = 0;
@@ -60,23 +62,41 @@ CONFIG server_pre_probe (int port)
       abort ();
     }
   CONFIG config = config_new (buf);
+  if (config == NULL)
+    {
+      perror ("Server failed to convert string config from client into config struct\n");
+      return 1;
+    }
   return config;
 }
 
 int client_probe(CONFIG config)
 {
+  printf("Starting client pre probe\n");
   UDP_CLIENT_CONN udp_client = udp_new_client (config->server_ip, config->udp_dest_port);
   if (udp_client == NULL)
     {
       perror ("Failed to create udp_client");
       return 1;
     }
-  int low = send_low_entropy_data (udp_client, config);
-  if (low)
+  printf("Setting up client upd connection\n");
+  if (udp_client_connect (udp_client))
     {
-      perror ("Client failed to send low entropy data");
+      perror ("Client failed to set up UDP connection with server in client probe stage\n");
+    }
+  printf("Client set up client upd connection\n");
+//  int low = send_low_entropy_data (udp_client, config);
+//  if (low)
+//    {
+//      perror ("Client failed to send low entropy data");
+//      return 1;
+//    }
+  if (udp_destroy_client (udp_client))
+    {
+      perror ("Failed to destroy upd client");
       return 1;
     }
+  printf("Client pre probe stage successfully finished\n");
   return 0;
 }
 
@@ -100,28 +120,43 @@ int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
 
 int server_probe (CONFIG config)
 {
+  printf("Starting server probe stage\n");
   UDP_SERVER udp_server = udp_new_server (config->udp_dest_port);
   if (udp_server == NULL)
     {
       perror ("Unable to get new UDP server for server probe");
       return 1;
     }
+  printf("Starting server probe server\n");
   int start = udp_server_start (udp_server);
   if (start)
     {
       perror ("Failed to start UDP server for server probe");
       return 1;
     }
+
+  printf("Started server probe server\n");
   UDP_HANDLER client_handler = udp_server_next_connection (udp_server);
   if (client_handler == NULL)
     {
       perror ("Failed to get next client connection for UDP probe");
       return 1;
     }
-  int low = receive_low_entropy_data (client_handler, config);
-  if (low)
+  printf("Server set up new UDP connection with client probe\n");
+//  int low = receive_low_entropy_data (client_handler, config);
+//  if (low)
+//    {
+//      perror ("Client failed to send low entropy data");
+//      return 1;
+//    }
+  if (udp_server_destroy (udp_server))
     {
-      perror ("Client failed to send low entropy data");
+      perror ("Failed to destroy udp_server in server probe stage");
+      return 1;
+    }
+  if (udp_destroy_handler (client_handler))
+    {
+      perror("Failed to destroy udp client handler in server probe stage");
       return 1;
     }
   return 0;

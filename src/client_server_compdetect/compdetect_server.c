@@ -35,17 +35,17 @@ int run_server (int port)
 {
 
   CONFIG config = server_pre_probe (port);
-  if (config)
+  if (config == NULL)
     {
       perror ("Server failed in pre probe step");
       abort ();
     }
-  int probe = server_probe (config);
-  if (probe)
-    {
-      perror ("Client failed to probe server");
-      abort ();
-    }
+//  int probe = server_probe (config);
+//  if (probe)
+//    {
+//      perror ("Client failed to probe server");
+//      abort ();
+//    }
 //  config_destroy(config);
 }
 
