@@ -4,6 +4,7 @@
 #include <tcp_sock_handler.h>
 #include <udp_sock_handler.h>
 #include <strings.h>
+#include <unistd.h>
 #include "compdetect.h"
 #include "config.h"
 #include "constants.h"
@@ -58,11 +59,11 @@ CONFIG server_pre_probe (int port)
   buf[buf_len] = '\0';
   printf ("server received config\n\n %s \n", buf);
 
-//  if (destroy_tcp_sever (server) || destroy_tcp_handler (client_handler))
-//    {
-//      perror ("Server failed to close tcp conn in pre probe");
-//      abort ();
-//    }
+  if (destroy_tcp_sever (server) || destroy_tcp_handler (client_handler))
+    {
+      perror ("Server failed to close tcp conn in pre probe");
+      abort ();
+    }
   printf ("Server converting config str into config struct\n");
   CONFIG config = config_new (buf);
   if (config == NULL)
@@ -77,7 +78,7 @@ CONFIG server_pre_probe (int port)
 
 int client_probe(CONFIG config)
 {
-  printf("Starting client pre probe\n");
+  printf("Starting client pre probe on ip %s on port %d\n", config->server_ip, config->udp_dest_port);
   UDP_CLIENT_CONN udp_client = udp_new_client (config->server_ip, config->udp_dest_port);
   if (udp_client == NULL)
     {
@@ -90,12 +91,12 @@ int client_probe(CONFIG config)
       perror ("Client failed to set up UDP connection with server in client probe stage\n");
     }
   printf("Client set up client upd connection\n");
-//  int low = send_low_entropy_data (udp_client, config);
-//  if (low)
-//    {
-//      perror ("Client failed to send low entropy data");
-//      return 1;
-//    }
+  int low = send_low_entropy_data (udp_client, config);
+  if (low)
+    {
+      perror ("Client failed to send low entropy data");
+      return 1;
+    }
   if (udp_destroy_client (udp_client))
     {
       perror ("Failed to destroy upd client");
@@ -105,27 +106,11 @@ int client_probe(CONFIG config)
   return 0;
 }
 
-int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
-{
-  char *buf[config->udp_payload_size];
-  bzero (buf, config->udp_payload_size);
-  int sent_success = 0;
-  int sent_failed = 0;
-  for (int i = 0; i < config->udp_packet_train_len; i++)
-    {
-      int sent = udp_sendto_n (udp_client->handler, buf, config->udp_payload_size);
-      if (sent)
-        sent_failed++;
-      else
-        sent_success++;
-    }
-  printf("Sent low entropy data from client with %d success %d failed\n", sent_success, sent_failed);
-  return 0;
-}
+
 
 int server_probe (CONFIG config)
 {
-  printf("Starting server probe stage\n");
+  printf("Starting server probe stage on port %d\n", config->udp_dest_port);
   UDP_SERVER udp_server = udp_new_server (config->udp_dest_port);
   if (udp_server == NULL)
     {
@@ -148,12 +133,12 @@ int server_probe (CONFIG config)
       return 1;
     }
   printf("Server set up new UDP connection with client probe\n");
-//  int low = receive_low_entropy_data (client_handler, config);
-//  if (low)
-//    {
-//      perror ("Client failed to send low entropy data");
-//      return 1;
-//    }
+  int low = receive_low_entropy_data (client_handler, config);
+  if (low)
+    {
+      perror ("Client failed to send low entropy data");
+      return 1;
+    }
   if (udp_server_destroy (udp_server))
     {
       perror ("Failed to destroy udp_server in server probe stage");
@@ -167,19 +152,56 @@ int server_probe (CONFIG config)
   return 0;
 }
 
+
+int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
+{
+  sleep(1);
+  printf("startign to send low entropy data\n");
+  char *mess = "start";
+  int sent = udp_sendto_n (udp_client->handler, mess, 5);
+  if (sent)
+    {
+      perror ("Error sending low entorpy data\n");
+      return 1;
+    }
+//  char *buf[config->udp_payload_size];
+//  bzero (buf, config->udp_payload_size);
+//  char *mess = "start";
+//  int sent_success = 0;
+//  int sent_failed = 0;
+//  for (int i = 0; i < 10; i++)
+//    {
+//      int sent = udp_sendto_n (udp_client->handler, mess, 5);
+//      if (sent)
+//        sent_failed++;
+//      else
+//        sent_success++;
+//    }
+//  printf("Sent low entropy data from client with %d success %d failed\n", sent_success, sent_failed);
+  return 0;
+}
+
 int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
 {
-  char *buf[config->udp_payload_size];
-  bzero (buf, config->udp_payload_size);
-  int sent_success = 0;
-  int sent_failed = 0;
-  for (int i = 0; i < config->udp_packet_train_len; i++)
+  printf ("Server starting low entropy receive\n");
+  char start[MAX_UDP_SIZE];
+  int received = udp_recvfrom_n (client_handler, start, 5);
+  if (received < 1)
     {
-      int sent = udp_recvfrom_n (client_handler, buf, config->udp_payload_size);
-      if (sent)
-        sent_failed++;
-      else
-        sent_success++;
+      perror ("Unable to receive start message for setting up next conn for udp server");
+      return 1;
     }
-  printf("Sent low entropy data received from client with %d success %d failed\n", sent_success, sent_failed);
+//  char *buf[5];
+//  int sent_success = 0;
+//  int sent_failed = 0;
+//  for (int i = 0; i < 10; i++)
+//    {
+//      int received = udp_recvfrom_n (client_handler, buf, 5);
+//      if (received < 1)
+//        sent_failed++;
+//      else
+//        sent_success++;
+//    }
+//  printf("Sent low entropy data received from client with %d success %d failed\n", sent_success, sent_failed);
+  return 0;
 }
