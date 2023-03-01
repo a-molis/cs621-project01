@@ -16,6 +16,7 @@ struct args {
     int tcp_dest_tail_syn_port;
 };
 
+// TODO update to test probe not just set up
 void *run_server(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;

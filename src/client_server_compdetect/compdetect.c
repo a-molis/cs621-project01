@@ -8,6 +8,8 @@
 #include "config.h"
 #include "constants.h"
 
+// TODO test with running client first for all steps
+
 int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config);
 int client_pre_probe (CONFIG config, char *config_str)
 {
