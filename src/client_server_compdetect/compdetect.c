@@ -56,17 +56,20 @@ CONFIG server_pre_probe (int port)
   buf[buf_len] = '\0';
   printf ("server received config\n\n %s \n", buf);
 
-  if (destroy_tcp_handler (client_handler) || destroy_tcp_sever (server))
-    {
-      perror ("Server failed to close tcp conn in pre probe");
-      abort ();
-    }
+//  if (destroy_tcp_sever (server) || destroy_tcp_handler (client_handler))
+//    {
+//      perror ("Server failed to close tcp conn in pre probe");
+//      abort ();
+//    }
+  printf ("Server converting config str into config struct\n");
   CONFIG config = config_new (buf);
   if (config == NULL)
     {
       perror ("Server failed to convert string config from client into config struct\n");
       return 1;
     }
+
+  printf ("Server converted config str into config struct\n");
   return config;
 }
 

@@ -40,6 +40,7 @@ int run_server (int port)
       perror ("Server failed in pre probe step");
       abort ();
     }
+  return 0;
 //  int probe = server_probe (config);
 //  if (probe)
 //    {

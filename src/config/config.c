@@ -10,7 +10,7 @@ void parse_required_params (CONFIG config, const cJSON *json);
 
 CONFIG config_new (char *config_str)
 {
-  printf ("starting config");
+  printf ("starting config\n");
   CONFIG config = malloc (sizeof (struct CONFIG_DATA));
   if (!config)
     {
