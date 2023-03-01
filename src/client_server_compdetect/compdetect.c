@@ -5,6 +5,7 @@
 #include <udp_sock_handler.h>
 #include <strings.h>
 #include <unistd.h>
+#include <unistd.h>
 #include "compdetect.h"
 #include "config.h"
 #include "constants.h"
@@ -170,6 +171,7 @@ int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
   int sent_failed = 0;
   for (int i = 0; i < config->udp_packet_train_len; i++)
     {
+      usleep (100);
       int sent = udp_sendto_n (udp_client->handler, buf, config->udp_payload_size);
       if (sent)
         sent_failed++;
@@ -196,7 +198,7 @@ int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
   for (int i = 0; i < config->udp_packet_train_len; i++)
     {
       int received = udp_recvfrom_n (client_handler, buf, config->udp_payload_size);
-      if (received < 1)
+      if (received)
         sent_failed++;
       else
         sent_success++;

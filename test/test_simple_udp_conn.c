@@ -26,11 +26,15 @@ void *run_server(void *inputs)
   if (server_args->started_server)
     return 0;
   UDP_HANDLER client_handler = udp_server_next_connection (server);
+  if (client_handler == NULL)
+    {
+      printf("Server failed to get next udp conn");
+    }
   char test[MAX_UDP_SIZE];
   int output_len = 0;
   int success = udp_recvfrom (client_handler, test, &output_len);
   if (success)
-    printf("Failed to send test data from server to client\n");
+    printf("Sever failed to receive test data from client\n");
   strcpy (server_args->output, test);
   if (udp_server_destroy(server))
     printf ("Failed to destroy server client_handler");
@@ -73,8 +77,6 @@ int main() {
   pthread_join(client_thread, NULL);
   pthread_join(server_thread, NULL);
   int success = 0;
-  printf("started server in outside %d\n", server_args->started_server);
-  printf("started client in outside %d\n", server_args->started_client);
   if (server_args->started_client || server_args->started_server ||
   (strcmp(server_args->input, server_args->output) != 0))
     success = 1;

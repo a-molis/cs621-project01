@@ -115,7 +115,7 @@ UDP_HANDLER udp_server_next_connection (UDP_SERVER server)
   char start[MAX_UDP_SIZE];
 
   int received = udp_recvfrom_n (handler, start, 5);
-  if (received < 1)
+  if (received)
     {
       perror ("Unable to receive start message for setting up next conn for udp server");
       return 1;
@@ -184,7 +184,7 @@ int udp_setup_client (UDP_CLIENT_CONN client)
     return 1;
   char confirm[MAX_UDP_SIZE];
   int received = udp_recvfrom_n (client->handler, confirm, 8);
-  if (received < 1)
+  if (received)
     return 1;
   printf("Client received %d bytes from the server with message %s\n", received, confirm);
   return 0;
@@ -202,48 +202,30 @@ int udp_destroy_client(UDP_CLIENT_CONN client)
 
 int udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len)
 {
-  int total = 0;
-  int remaining = buf_len;
-  printf("foo\n");
-  while (total < buf_len)
+  printf ("trying to send data with handler->addr %p, handler->addr_len %d family: %d\n", handler->addr, handler->addr_len, handler->addr->sin_family);
+  int sent = sendto(handler->sockfd, buf, buf_len, 0,
+                    (struct sockaddr *)handler->addr, handler->addr_len);
+  if (sent < buf_len)
     {
-      // TODO see if need to change to ssize_t
-      printf ("trying to send data with handler->addr %p, handler->addr_len %d family: %d\n", handler->addr, handler->addr_len, handler->addr->sin_family);
-      int sent = sendto(handler->sockfd, buf + total, remaining, 0,
-                        (struct sockaddr *)handler->addr, handler->addr_len);
-      if (sent < 1)
-        {
-          perror ("Error sending udp datagram");
-          return sent;
-        }
-      total += sent;
-      remaining -= sent;
+      perror ("Error sending udp datagram");
+      return sent;
     }
-  printf("Sent %d bytes of data\n", total);
   return 0;
 }
 
 int udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len)
 {
   printf("Trying to receive data with len %d from udp_recvfrom_n\n", buf_len);
-  int total = 0;
-  int remaining = buf_len;
-  while (total < buf_len)
-    {
-      printf("udp_recvfrom_n total %d \n", total);
-      int received = recvfrom (handler->sockfd, buf + total, remaining, 0,
+
+      int received = recvfrom (handler->sockfd, buf, buf_len, 0,
                               (struct sockaddr *) handler->addr, &handler->addr_len);
       printf("Number of bytes received %d\n", received);
-      if (received < 0)
+      if (received < buf_len)
         {
           perror("udp_recvfrom_n failed to recv enough data from socket");
           return 1;
         }
-      total += received;
-      remaining -= received;
-      printf("Total in udp_recvfrom_n: %d\n", total);
-    }
-  return total;
+        return 0;
 }
 
 int udp_sendto(UDP_HANDLER handler, char *buf, int buf_len)
@@ -275,14 +257,12 @@ int udp_recvfrom(UDP_HANDLER handler, char *buf, int *output_len)
   *output_len = 0;
   char num_buf[4];
   int recv_len = udp_recvfrom_n (handler, num_buf, 4);
-  if (recv_len < 0)
+  if (recv_len)
     {
       perror ("tcp_recvn failed to recv enough data "
              "from socket when getting length");
       return 1;
     }
-  else if (recv_len == 0)
-    return EOF;
   uint32_t len_nb = (num_buf[0] << 24)
                     | (num_buf[1] << 16)
                     | (num_buf[2] << 8)
@@ -291,7 +271,7 @@ int udp_recvfrom(UDP_HANDLER handler, char *buf, int *output_len)
 
   *buf = malloc (sizeof(char) * size);
   int received = udp_recvfrom_n (handler, buf, size);
-  if (received < 0)
+  if (received)
     {
       perror ("tcp_recv failed to recv enough data "
              "from socket when getting data");
