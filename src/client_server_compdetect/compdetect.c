@@ -153,25 +153,32 @@ int server_probe (CONFIG config)
   return 0;
 }
 
+void
+set_packet_id (char *buf, int num)
+{
+  buf[0] = (num >> 8) & 0xFF;
+  buf[1] = num & 0xFF;
+}
+
+void
+get_packet_id (char *buf, int *num)
+{
+  *num = buf[0] << 8 | buf[1];
+}
 
 int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
 {
   sleep(1);
-  printf("startign to send low entropy data\n");
-//  char *mess = "start";
-//  int sent = udp_sendto_n (udp_client->handler, mess, 5);
-//  if (sent)
-//    {
-//      perror ("Error sending low entorpy data\n");
-//      return 1;
-//    }
+  printf("starting to send low entropy data\n");
+  int packet_id = 0;
   char *buf[config->udp_payload_size];
   bzero (buf, config->udp_payload_size);
   int sent_success = 0;
   int sent_failed = 0;
-  for (int i = 0; i < config->udp_packet_train_len; i++)
+  for (int i = 0; i < config->udp_packet_train_len; i++, packet_id++)
     {
       usleep (100);
+      set_packet_id (buf, packet_id);
       int sent = udp_sendto_n (udp_client->handler, buf, config->udp_payload_size);
       if (sent)
         sent_failed++;
@@ -185,23 +192,23 @@ int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
 int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
 {
   printf ("Server starting low entropy receive\n");
-//  char start[MAX_UDP_SIZE];
-//  int received = udp_recvfrom_n (client_handler, start, 5);
-//  if (received < 1)
-//    {
-//      perror ("Unable to receive start message for setting up next conn for udp server");
-//      return 1;
-//    }
+
   char *buf[config->udp_payload_size];
   int sent_success = 0;
   int sent_failed = 0;
   for (int i = 0; i < config->udp_packet_train_len; i++)
     {
       int received = udp_recvfrom_n (client_handler, buf, config->udp_payload_size);
+      int packet_id = 0;
+      get_packet_id (buf, &packet_id);
+
       if (received)
         sent_failed++;
       else
-        sent_success++;
+        {
+          sent_success++;
+          printf ("packet id %d", packet_id);
+        }
     }
   printf("Sent low entropy data received from client with %d success %d failed\n", sent_success, sent_failed);
   return 0;
