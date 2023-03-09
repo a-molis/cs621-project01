@@ -145,7 +145,6 @@ int destroy_tcp_client(TCP_CLIENT_CONN client)
 
 int tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len)
 {
-  printf("Trying to receive data with len %d\n", buf_len);
   int total = 0;
   int remaining = buf_len;
   while (total < buf_len) 

@@ -202,7 +202,6 @@ int udp_destroy_client(UDP_CLIENT_CONN client)
 
 int udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len)
 {
-  printf ("trying to send data with handler->addr %p, handler->addr_len %d family: %d\n", handler->addr, handler->addr_len, handler->addr->sin_family);
   int sent = sendto(handler->sockfd, buf, buf_len, 0,
                     (struct sockaddr *)handler->addr, handler->addr_len);
   if (sent < buf_len)
@@ -219,7 +218,6 @@ int udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len)
 
       int received = recvfrom (handler->sockfd, buf, buf_len, 0,
                               (struct sockaddr *) handler->addr, &handler->addr_len);
-      printf("Number of bytes received %d\n", received);
       if (received < buf_len)
         {
           perror("udp_recvfrom_n failed to recv enough data from socket");
