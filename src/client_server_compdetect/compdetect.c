@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <time.h>
 #include "compdetect.h"
 #include "config.h"
 #include "constants.h"
@@ -194,8 +195,9 @@ int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
 int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
 {
   printf ("Server starting low entropy receive\n");
-
   char buf[config->udp_payload_size];
+  time_t recv_times[config->udp_packet_train_len];
+  bzero (recv_times, sizeof (time_t) * config->udp_packet_train_len);
   int sent_success = 0;
   int sent_failed = 0;
   for (int i = 0; i < config->udp_packet_train_len; i++)
@@ -208,10 +210,31 @@ int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
         sent_failed++;
       else
         {
+          printf ("trying to add packet id %d\n", packet_id);
+          time_t recv_time;
+          time(&recv_time);
+          recv_times[packet_id] = recv_time;
           sent_success++;
-          printf ("packet id %d\n", packet_id);
+          printf ("added packet id %d\n", packet_id);
         }
     }
-  printf("Sent low entropy data received from client with %d success %d failed\n", sent_success, sent_failed);
+  printf ("ended receive\n");
+  int start = -1;
+  int end = -1;
+  for (int i = 0; i < config->udp_packet_train_len; i++)
+    {
+      if (recv_times[i] != 0)
+          start = i;
+    }
+  for (int i = config->udp_packet_train_len; i > 0; i--)
+    {
+      if (recv_times[i] != 0)
+          end = i;
+    }
+  if (start != -1 && end != -1)
+    printf ("It took %f seconds between packet %d and %d\n", difftime(recv_times[start], recv_times[end]), start, end);
+  else
+    printf ("could not get start or end time\n");
+  printf ("Sent low entropy data received from client with %d success %d failed\n", sent_success, sent_failed);
   return 0;
 }
