@@ -225,18 +225,26 @@ int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
   for (int i = 0; i < config->udp_packet_train_len; i++)
     {
       if (recv_times[i].millitm != 0)
+        {
           start = i;
+          break;
+        }
     }
   for (int i = config->udp_packet_train_len; i > 0; i--)
     {
       if (recv_times[i].millitm != 0)
+        {
           end = i;
+          break;
+        }
     }
   if (start != -1 && end != -1)
     {
-      printf ("start time %s", asctime(gmtime(&recv_times[start].time)));
-      printf ("end time %s", asctime(gmtime(&recv_times[end].time)));
-      printf ("It took %.f seconds between packet %d and %d\n", difftime(recv_times[start].time, recv_times[end].time), start, end);
+      printf ("start time %d\n", start);
+      printf ("end time %d\n", end);
+      double ms = (1000 * difftime(recv_times[end].time, recv_times[start].time)) +
+        recv_times[end].millitm -  recv_times[start].millitm;
+      printf ("It took %.f ms between packet between packets %d and %d\n", ms, start, end);
     }
   else
     printf ("could not get start or end time\n");
