@@ -6,9 +6,10 @@
 #include <strings.h>
 #include <unistd.h>
 #include <stdint.h>
-#include <unistd.h>
 #include <time.h>
 #include <sys/timeb.h>
+#include <signal.h>
+#include <errno.h>
 #include "compdetect.h"
 #include "config.h"
 #include "constants.h"
@@ -110,7 +111,10 @@ int client_probe(CONFIG config)
   return 0;
 }
 
-
+void signal_handler ()
+{
+  write (STDOUT_FILENO, "Timeout\n", 8);
+}
 
 int server_probe (CONFIG config)
 {
@@ -137,6 +141,9 @@ int server_probe (CONFIG config)
       return 1;
     }
   printf("Server set up new UDP connection with client probe\n");
+
+  signal (SIGALRM, signal_handler);
+  alarm (5);
   int low = receive_low_entropy_data (client_handler, config);
   if (low)
     {
@@ -180,7 +187,6 @@ int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
   int sent_failed = 0;
   for (int i = 0; i < config->udp_packet_train_len; i++, packet_id++)
     {
-      usleep (100);
       printf("sending packet id %d\n", packet_id);
       set_packet_id (buf, packet_id);
       int sent = udp_sendto_n (udp_client->handler, buf, config->udp_payload_size);
@@ -203,10 +209,16 @@ int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
   int sent_failed = 0;
   for (int i = 0; i < config->udp_packet_train_len; i++)
     {
+      printf("trying to receive data from train\n");
       int received = udp_recvfrom_n (client_handler, buf, config->udp_payload_size);
       uint16_t packet_id = 0;
       get_packet_id (buf, &packet_id);
 
+      if (received == EINTR)
+        {
+          printf ("low entropy timeout\n");
+          break;
+        }
       if (received)
         sent_failed++;
       else

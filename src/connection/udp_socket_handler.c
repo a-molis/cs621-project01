@@ -7,6 +7,7 @@
 #include <strings.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include "constants.h"
 #include "udp_sock_handler.h"
 
@@ -218,10 +219,11 @@ int udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len)
 
       int received = recvfrom (handler->sockfd, buf, buf_len, 0,
                               (struct sockaddr *) handler->addr, &handler->addr_len);
+      printf ("Received %d bytes\n", received);
       if (received < buf_len)
         {
           perror("udp_recvfrom_n failed to recv enough data from socket");
-          return 1;
+          return errno;
         }
         return 0;
 }
