@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/timeb.h>
 #include "compdetect.h"
 #include "config.h"
 #include "constants.h"
@@ -196,8 +197,8 @@ int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
 {
   printf ("Server starting low entropy receive\n");
   char buf[config->udp_payload_size];
-  time_t recv_times[config->udp_packet_train_len];
-  bzero (recv_times, sizeof (time_t) * config->udp_packet_train_len);
+  struct timeb recv_times[config->udp_packet_train_len];
+  bzero (recv_times, sizeof (struct timeb) * config->udp_packet_train_len);
   int sent_success = 0;
   int sent_failed = 0;
   for (int i = 0; i < config->udp_packet_train_len; i++)
@@ -211,8 +212,8 @@ int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
       else
         {
           printf ("trying to add packet id %d\n", packet_id);
-          time_t recv_time;
-          time(&recv_time);
+          struct timeb recv_time;
+          ftime(&recv_time);
           recv_times[packet_id] = recv_time;
           sent_success++;
           printf ("added packet id %d\n", packet_id);
@@ -223,16 +224,20 @@ int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
   int end = -1;
   for (int i = 0; i < config->udp_packet_train_len; i++)
     {
-      if (recv_times[i] != 0)
+      if (recv_times[i].millitm != 0)
           start = i;
     }
   for (int i = config->udp_packet_train_len; i > 0; i--)
     {
-      if (recv_times[i] != 0)
+      if (recv_times[i].millitm != 0)
           end = i;
     }
   if (start != -1 && end != -1)
-    printf ("It took %f seconds between packet %d and %d\n", difftime(recv_times[start], recv_times[end]), start, end);
+    {
+      printf ("start time %s", asctime(gmtime(&recv_times[start].time)));
+      printf ("end time %s", asctime(gmtime(&recv_times[end].time)));
+      printf ("It took %.f seconds between packet %d and %d\n", difftime(recv_times[start].time, recv_times[end].time), start, end);
+    }
   else
     printf ("could not get start or end time\n");
   printf ("Sent low entropy data received from client with %d success %d failed\n", sent_success, sent_failed);
