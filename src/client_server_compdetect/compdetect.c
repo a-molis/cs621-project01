@@ -5,6 +5,7 @@
 #include <udp_sock_handler.h>
 #include <strings.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <unistd.h>
 #include "compdetect.h"
 #include "config.h"
@@ -154,14 +155,14 @@ int server_probe (CONFIG config)
 }
 
 void
-set_packet_id (char *buf, int num)
+set_packet_id (char *buf, uint8_t num)
 {
   buf[0] = (num >> 8) & 0xFF;
   buf[1] = num & 0xFF;
 }
 
 void
-get_packet_id (char *buf, int *num)
+get_packet_id (char *buf, uint8_t *num)
 {
   *num = buf[0] << 8 | buf[1];
 }
@@ -170,8 +171,8 @@ int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
 {
   sleep(1);
   printf("starting to send low entropy data\n");
-  int packet_id = 0;
-  char *buf[config->udp_payload_size];
+  uint8_t packet_id = 0;
+  char buf[config->udp_payload_size];
   bzero (buf, config->udp_payload_size);
   int sent_success = 0;
   int sent_failed = 0;
@@ -193,13 +194,13 @@ int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
 {
   printf ("Server starting low entropy receive\n");
 
-  char *buf[config->udp_payload_size];
+  char buf[config->udp_payload_size];
   int sent_success = 0;
   int sent_failed = 0;
   for (int i = 0; i < config->udp_packet_train_len; i++)
     {
       int received = udp_recvfrom_n (client_handler, buf, config->udp_payload_size);
-      int packet_id = 0;
+      uint8_t packet_id = 0;
       get_packet_id (buf, &packet_id);
 
       if (received)
