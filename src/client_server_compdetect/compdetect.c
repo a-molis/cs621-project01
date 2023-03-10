@@ -15,8 +15,7 @@
 #include "constants.h"
 
 // TODO test with running client first for all steps
-
-int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config);
+int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t);
 int client_pre_probe (CONFIG config, char *config_str)
 {
   TCP_CLIENT_CONN client_conn = tcp_new_client (config->server_ip, config->tcp_probing_port);
@@ -96,8 +95,8 @@ int client_probe(CONFIG config)
       perror ("Client failed to set up UDP connection with server in client probe stage\n");
     }
   printf("Client set up client upd connection\n");
-  int low = send_low_entropy_data (udp_client, config);
-  if (low)
+  int send_low = send_udp_train (udp_client, config, low);
+  if (send_low)
     {
       perror ("Client failed to send low entropy data");
       return 1;
@@ -143,9 +142,9 @@ int server_probe (CONFIG config)
   printf("Server set up new UDP connection with client probe\n");
 
   signal (SIGALRM, signal_handler);
-  alarm (5);
-  int low = receive_low_entropy_data (client_handler, config);
-  if (low)
+  alarm (UPP_TIMEOUT);
+  int low_recv = recv_udp_train (client_handler, config, low);
+  if (low_recv)
     {
       perror ("Client failed to send low entropy data");
       return 1;
@@ -176,7 +175,7 @@ get_packet_id (char *buf, uint16_t *num)
   *num = (buf[0] & 0xFF) << 8 | (buf[1] & 0xFF);
 }
 
-int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
+int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t)
 {
   sleep(1);
   printf("starting to send low entropy data\n");
@@ -195,11 +194,11 @@ int send_low_entropy_data (UDP_CLIENT_CONN udp_client, CONFIG config)
       else
         sent_success++;
     }
-  printf("Sent low entropy data from client with %d success %d failed\n", sent_success, sent_failed);
+  printf("Sent %s entropy data from client with %d success %d failed\n", train_type_str[t], sent_success, sent_failed);
   return 0;
 }
 
-int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
+int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t)
 {
   printf ("Server starting low entropy receive\n");
   char buf[config->udp_payload_size];
@@ -209,14 +208,14 @@ int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
   int sent_failed = 0;
   for (int i = 0; i < config->udp_packet_train_len; i++)
     {
-      printf("trying to receive data from train\n");
+      printf("trying to receive %s entropy data from train\n", train_type_str[t]);
       int received = udp_recvfrom_n (client_handler, buf, config->udp_payload_size);
       uint16_t packet_id = 0;
       get_packet_id (buf, &packet_id);
 
       if (received == EINTR)
         {
-          printf ("low entropy timeout\n");
+          printf ("%s entropy timeout\n", train_type_str[t]);
           break;
         }
       if (received)
@@ -256,10 +255,13 @@ int receive_low_entropy_data (UDP_HANDLER client_handler, CONFIG config)
       printf ("end time %d\n", end);
       double ms = (1000 * difftime(recv_times[end].time, recv_times[start].time)) +
         recv_times[end].millitm -  recv_times[start].millitm;
-      printf ("It took %.f ms between packet between packets %d and %d\n", ms, start, end);
+      printf ("It took %.f ms between packet between packets %d and %d for %s entropy data\n", ms, start, end, train_type_str[t]);
     }
   else
-    printf ("could not get start or end time\n");
-  printf ("Sent low entropy data received from client with %d success %d failed\n", sent_success, sent_failed);
+    {
+      printf ("could not get start or end time for %s entropy data\n", train_type_str[t]);
+      return 1;
+    }
+  printf ("Sent %s entropy data received from client with %d success %d failed\n", train_type_str[t], sent_success, sent_failed);
   return 0;
 }
