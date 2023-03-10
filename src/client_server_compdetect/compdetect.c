@@ -15,7 +15,8 @@
 #include "constants.h"
 
 // TODO test with running client first for all steps
-int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t);
+int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf);
+int get_high_entropy_data (CONFIG p_data, char data[]);
 int client_pre_probe (CONFIG config, char *config_str)
 {
   TCP_CLIENT_CONN client_conn = tcp_new_client (config->server_ip, config->tcp_probing_port);
@@ -95,18 +96,46 @@ int client_probe(CONFIG config)
       perror ("Client failed to set up UDP connection with server in client probe stage\n");
     }
   printf("Client set up client upd connection\n");
-  int send_low = send_udp_train (udp_client, config, low);
+  char buf[config->udp_payload_size];
+  bzero (buf, config->udp_payload_size);
+  int send_low = send_udp_train (udp_client, config, low, buf);
   if (send_low)
     {
       perror ("Client failed to send low entropy data");
       return 1;
     }
+  char high_data[config->udp_payload_size];
+  int opened_data = get_high_entropy_data(config, high_data);
   if (udp_destroy_client (udp_client))
     {
       perror ("Failed to destroy upd client");
       return 1;
     }
   printf("Client pre probe stage successfully finished\n");
+  return 0;
+}
+
+int get_high_entropy_data (CONFIG config, char data[])
+{
+  bzero (data, config->udp_payload_size);
+  FILE *fd = fopen(random_file, "r");
+  if (!fd)
+    {
+      printf("Failed to open file %s\n", random_file);
+      return 1;
+    }
+  int read_len = config->udp_payload_size - 2;
+  if (read(fd, data + 2, read_len) < read_len)
+    {
+      perror ("Unable to read data from high entropy file\n");
+      return 1;
+    }
+  if (fclose (fd))
+    {
+      perror ("Unable to close file");
+      abort ();
+    }
+  printf("\n %s\n", data);
   return 0;
 }
 
@@ -175,13 +204,11 @@ get_packet_id (char *buf, uint16_t *num)
   *num = (buf[0] & 0xFF) << 8 | (buf[1] & 0xFF);
 }
 
-int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t)
+int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf)
 {
   sleep(1);
   printf("starting to send low entropy data\n");
   uint16_t packet_id = 0;
-  char buf[config->udp_payload_size];
-  bzero (buf, config->udp_payload_size);
   int sent_success = 0;
   int sent_failed = 0;
   for (int i = 0; i < config->udp_packet_train_len; i++, packet_id++)
