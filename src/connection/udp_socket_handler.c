@@ -157,6 +157,7 @@ int udp_client_connect(UDP_CLIENT_CONN client)
       abort ();
     }
   printf ("set up client socket\n");
+  // TODO verify DF bit set correctly with tcpdump
   int optval = IP_PMTUDISC_DO;
   if (setsockopt (sock, IPPROTO_IP, IP_MTU_DISCOVER, &optval,
                   sizeof (optval)) < 0)
