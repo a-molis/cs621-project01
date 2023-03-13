@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <strings.h>
 #include "constants.h"
 #include "udp_sock_handler.h"
 #include "tcp_sock_handler.h"
@@ -40,15 +41,24 @@ int run_server (int port)
       perror ("Server failed in pre probe step");
       abort ();
     }
-  int probe = server_probe (config);
+  char result[config->udp_payload_size];
+  bzero (result, config->udp_payload_size);
+  int probe = server_probe (config, result);
   if (probe)
     {
       perror ("Client failed to probe server");
       abort ();
     }
+  printf ("Result from server results:\n%s\n", result);
+  if (server_post_probe(config, result))
+    {
+      perror ("Server failed to send post probe");
+      abort ();
+    }
   config_destroy(config);
   return 0;
 }
+
 
 
 

@@ -40,5 +40,12 @@ void comp_client_run (char *config_path)
       perror ("Client failed to probe server");
       abort ();
     }
+  // TODO test without sleep
+  sleep (2);
+  if (client_post_probe (config))
+    {
+      perror ("Client error in post probe stage");
+      abort ();
+    }
   config_destroy(config);
 }

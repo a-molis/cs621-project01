@@ -17,7 +17,8 @@
 // TODO test with running client first for all steps
 int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf);
 int get_high_entropy_data (CONFIG p_data, char data[]);
-int client_pre_probe (CONFIG config, char *config_str)
+int
+client_pre_probe (CONFIG config, char *config_str)
 {
   TCP_CLIENT_CONN client_conn = tcp_new_client (config->server_ip, config->tcp_probing_port);
   int connected = tcp_client_connect(client_conn);
@@ -154,7 +155,7 @@ void signal_handler ()
   write (STDOUT_FILENO, "Timeout\n", 8);
 }
 
-int server_probe (CONFIG config)
+int server_probe (CONFIG config, char *result)
 {
   printf("Starting server probe stage on port %d\n", config->udp_dest_port);
   UDP_SERVER udp_server = udp_new_server (config->udp_dest_port);
@@ -182,15 +183,23 @@ int server_probe (CONFIG config)
 
   signal (SIGALRM, signal_handler);
   alarm (UPP_TIMEOUT);
-  if (recv_udp_train (client_handler, config, low))
+
+  if (recv_udp_train (client_handler, config, low, result))
     {
       perror ("Client failed to send low entropy data");
       return 1;
     }
   sleep(5);
+  size_t len = strlen (result);
+  if (len == 0)
+    {
+      printf ("len %lu\n", len);
+      perror ("Failed to get result for low entropy data\n");
+      return 1;
+    }
   signal (SIGALRM, signal_handler);
   alarm (UPP_TIMEOUT);
-  if (recv_udp_train (client_handler, config, high))
+  if (recv_udp_train (client_handler, config, high, result + len))
     {
       perror ("Client failed to send high entropy data");
       return 1;
@@ -242,7 +251,7 @@ int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t
   return 0;
 }
 
-int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t)
+int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t, char result[])
 {
   printf ("Server starting low entropy receive\n");
   char buf[config->udp_payload_size];
@@ -299,13 +308,66 @@ int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t
       printf ("end time %d\n", end);
       double ms = (1000 * difftime(recv_times[end].time, recv_times[start].time)) +
         recv_times[end].millitm -  recv_times[start].millitm;
-      printf ("It took %.f ms between packet between packets %d and %d for %s entropy data\n", ms, start, end, train_type_str[t]);
+      sprintf (result, "It took %.f ms between packet between packets %d and %d for %s entropy data\n", ms, start, end, train_type_str[t]);
+      printf (result);
     }
   else
     {
       printf ("could not get start or end time for %s entropy data\n", train_type_str[t]);
+      sprintf (result, "Error getting %s entropy data\n", train_type_str[t]);
       return 1;
     }
   printf ("Sent %s entropy data received from client with %d success %d failed\n", train_type_str[t], sent_success, sent_failed);
+  return 0;
+}
+
+int
+server_post_probe (CONFIG config, char *result)
+{
+  printf("starting server post-probe stage\n");
+  TCP_SERVER server = tcp_new_server (config->tcp_probing_port);
+  if (tcp_server_start (server))
+    {
+      perror ("Unable to start server in pre probe");
+      abort ();
+    }
+  printf("TCP server started in server post-probe stage\n");
+  TCP_HANDLER client_handler = tcp_server_next_connection (server);
+  if (tcp_send (client_handler, result, strlen (result)))
+    {
+      perror ("Server failed to send post probe data");
+      return 1;
+    }
+  if (destroy_tcp_sever (server) || destroy_tcp_handler (client_handler))
+    {
+      perror ("Server failed to close tcp conn in post-probe");
+      abort ();
+    }
+}
+
+int
+client_post_probe (CONFIG config)
+{
+  TCP_CLIENT_CONN client_conn = tcp_new_client (config->server_ip, config->tcp_probing_port);
+  if (tcp_client_connect(client_conn))
+    {
+      perror ("Client Failed to connect to server in post probe");
+      abort ();
+    }
+  int buf_len = 0;
+  char buf[MAX_TCP_SIZE];
+  int received = tcp_recv (client_conn->handler, buf, &buf_len);
+  if (received)
+    {
+      perror ("Client failed to get results from server in post probe");
+      abort ();
+    }
+  buf[buf_len] = '\0';
+  printf ("\nResults from server: \n%s", buf);
+  if (destroy_tcp_client (client_conn))
+    {
+      perror ("Client failed to destroy client socket handler in post probe");
+      return 1;
+    }
   return 0;
 }

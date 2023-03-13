@@ -7,7 +7,9 @@
 int client_pre_probe (CONFIG config, char *config_str);
 CONFIG server_pre_probe (int port);
 int client_probe(CONFIG config);
-int server_probe (CONFIG config);
-int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t);
+int server_probe (CONFIG config, char *result);
+int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t, char *result);
+int server_post_probe (CONFIG config, char *result);
+int client_post_probe (CONFIG config);
 
 #endif //_COMPDETECT_H_
