@@ -157,6 +157,13 @@ int udp_client_connect(UDP_CLIENT_CONN client)
       abort ();
     }
   printf ("set up client socket\n");
+//  int optval = IP_PMTUDISC_DO;
+//  if (setsockopt (sock, IPPROTO_IP, IP_MTU_DISCOVER, &optval,
+//                  sizeof (optval)) < 0)
+//    {
+//      perror ("Failed to set socket option for DF bit");
+//      abort ();
+//    }
 
   struct sockaddr_in *sin = malloc (sizeof (struct sockaddr_in));
   memset (sin, 0, sizeof (*sin));
