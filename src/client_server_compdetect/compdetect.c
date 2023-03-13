@@ -104,6 +104,7 @@ int client_probe(CONFIG config)
       perror ("Client failed to send low entropy data");
       return 1;
     }
+  sleep(10);
   char high_data[config->udp_payload_size];
   if (get_high_entropy_data(config, high_data))
     {
@@ -186,6 +187,8 @@ int server_probe (CONFIG config)
       perror ("Client failed to send low entropy data");
       return 1;
     }
+  sleep(5);
+  signal (SIGALRM, signal_handler);
   alarm (UPP_TIMEOUT);
   if (recv_udp_train (client_handler, config, high))
     {
@@ -247,7 +250,7 @@ int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t
   bzero (recv_times, sizeof (struct timeb) * config->udp_packet_train_len);
   int sent_success = 0;
   int sent_failed = 0;
-  for (int i = 0; i < 2; i++)
+  for (int i = 0; i < config->udp_packet_train_len; i++)
     {
       printf("trying to receive %s entropy data from train\n", train_type_str[t]);
       int received = udp_recvfrom_n (client_handler, buf, config->udp_payload_size);
