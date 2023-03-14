@@ -8,7 +8,7 @@ static const int UDP_PAYLOAD_SIZE = 1000;
 static const int INTER_MEASURE_TIME = 15;
 static const int UDP_PACKET_TRAIN_LEN = 6000;
 static const int UDP_PACKET_TTL = 255;
-static const int UPP_TIMEOUT = 2;
+static const int UPP_TIMEOUT = 5;
 
 // TODO move to config
 static const char *random_file = "random_file";
