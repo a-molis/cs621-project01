@@ -105,7 +105,7 @@ int client_probe(CONFIG config)
       perror ("Client failed to send low entropy data");
       return 1;
     }
-  sleep(10);
+  sleep (config->inter_measure_time);
   char high_data[config->udp_payload_size];
   if (get_high_entropy_data(config, high_data))
     {
@@ -189,7 +189,7 @@ int server_probe (CONFIG config, char *result)
       perror ("Client failed to send low entropy data");
       return 1;
     }
-  sleep(5);
+
   size_t len = strlen (result);
   if (len == 0)
     {
@@ -198,7 +198,7 @@ int server_probe (CONFIG config, char *result)
       return 1;
     }
   signal (SIGALRM, signal_handler);
-  alarm (UPP_TIMEOUT);
+  alarm (20);
   if (recv_udp_train (client_handler, config, high, result + len))
     {
       perror ("Client failed to send high entropy data");
@@ -214,6 +214,7 @@ int server_probe (CONFIG config, char *result)
       perror("Failed to destroy udp client handler in server probe stage");
       return 1;
     }
+  alarm (0);
   return 0;
 }
 
