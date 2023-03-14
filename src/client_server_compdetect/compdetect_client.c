@@ -41,7 +41,7 @@ void comp_client_run (char *config_path)
       abort ();
     }
   // TODO test without sleep
-  sleep (2);
+  sleep (5);
   if (client_post_probe (config))
     {
       perror ("Client error in post probe stage");
