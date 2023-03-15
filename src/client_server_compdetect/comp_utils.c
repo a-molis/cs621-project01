@@ -8,9 +8,9 @@
 #include <sys/timeb.h>
 #include <signal.h>
 #include <errno.h>
-#include <netinet/tcp.h>
-#include <netinet/ip.h>
 #include <arpa/inet.h>
+#include <linux/tcp.h>
+#include <linux/ip.h>
 #include "comp_utils.h"
 #include "config.h"
 #include "constants.h"
@@ -21,7 +21,7 @@
 int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf);
 int get_high_entropy_data (CONFIG p_data, char data[]);
 int send_head_tcp_syn (CONFIG config);
-int create_syn_packet (CONFIG config, char *packet);
+int create_syn_packet (CONFIG config, char *packet, int dest_port, int id);
 
 /**
  * This is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
@@ -29,8 +29,9 @@ int create_syn_packet (CONFIG config, char *packet);
  * @param size The size of the buf
  * @return the checksum
  */
-unsigned short checksum(const char *buf, unsigned size)
+unsigned short checksum(const char *buf, unsigned size);
 
+int send_syn_packet (CONFIG config, char *packet, int dest_port);
 int
 client_pre_probe (CONFIG config, char *config_str)
 {
@@ -410,36 +411,62 @@ send_head_tcp_syn (CONFIG config)
       perror ("Error allocating packet with malloc");
       return 1;
     }
-  if (create_syn_packet(config, packet))
+  if (create_syn_packet(config, packet, config->tcp_dest_head_syn_port, 1))
     {
       perror ("Error creating syn packet");
       free (packet);
       return 1;
     }
-  printf ("Sent SYN packet to server at %s on port %d\n", config->server_ip, config->tcp_dest_head_syn_port);
+  if (send_syn_packet (config, packet, config->tcp_dest_head_syn_port))
+    {
+      perror ("Error sending raw packet for head syn packet");
+      free (packet);
+      return 1;
+    }
   free (packet);
+  printf ("Sent SYN packet to server at %s on port %d\n", config->server_ip, config->tcp_dest_head_syn_port);
   return 0;
 }
 
 int
-create_syn_packet (CONFIG config, char *packet)
+create_syn_packet (CONFIG config, char *packet, int dest_port, int id)
 {
   bzero (packet, config->tcp_packet_size);
-  uint32_t src_addr = inet_addr (config->client_ip);
+  in_addr_t dest_addr = inet_addr (config->server_ip);
+  in_addr_t src_addr = inet_addr (config->client_ip);
+  if (dest_addr == -1 || src_addr == -1)
+    {
+      perror ("Invalid dest or src address in config");
+      return 1;
+    }
   struct iphdr *ip = (struct iphdr *) packet;
-  struct tcphdr *tcp = (packet + sizeof (struct iphdr));
+  struct tcphdr *tcp = (struct tcphdr *) (packet + sizeof (struct iphdr));
   ip->version = 4;
   ip->ihl = 5;
-  ip->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr);
-  ip->id = htons (1);
+  ip->ttl = 32;
+  ip->tot_len = sizeof (struct tcphdr) + sizeof (struct iphdr);
+  ip->id = htons (id);
   ip->protocol = IPPROTO_TCP;
-  ip->check = checksum (packet, ip->tot_len);
-  printf("checksum %s\n", ip->check);[]
 
+
+  ip->daddr = dest_addr;
+  ip->saddr = src_addr;
+
+  tcp->source = htons (config->udp_source_port);
+  tcp->dest = htons (dest_port);
+  tcp->seq = htonl (1);
+  tcp->syn = 1;
+  tcp->window = htons (64240);
+
+  tcp->check = checksum ((const char *) tcp, 20);
+  ip->check = checksum (packet, ip->tot_len);
+  printf("checksum %d\n", ip->check);
   return 0;
 }
 
-unsigned short checksum(const char *buf, unsigned size)
+// This function is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
+unsigned short
+checksum(const char *buf, unsigned size)
 {
   unsigned sum = 0, i;
 
@@ -462,4 +489,40 @@ unsigned short checksum(const char *buf, unsigned size)
 
   /* Invert to get the negative in ones-complement arithmetic */
   return ~sum;
+}
+
+int
+send_syn_packet (CONFIG config, char *packet, int dest_port)
+{
+  struct sockaddr_in sin;
+  memset (&sin, 0, sizeof (sin));
+  sin.sin_addr.s_addr = inet_addr (config->client_ip);
+  sin.sin_port = htons (config->tcp_src_syn_port);
+
+  struct sockaddr_in sout;
+  memset (&sout, 0, sizeof (sout));
+  sout.sin_addr.s_addr = inet_addr (config->server_ip);
+  sout.sin_port = htons (dest_port);
+
+  int sockfd = socket (AF_INET, SOCK_RAW, IPPROTO_TCP);
+  if (sockfd < 0)
+    {
+      perror ("Failed to open raw socket");
+      return 1;
+    }
+  int one = 1;
+  const int *val = &one;
+  if (setsockopt (sockfd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
+    {
+      perror ("Failed to set socket opt for raw socket");
+      return 1;
+    }
+  struct iphdr *ip = (struct iphdr *) packet;
+  if (sendto (sockfd, packet, ip->tot_len, 0, (struct sockaddr *) &sin, sizeof (sin)) < 0)
+    {
+      perror ("Error sending syn packet");
+      return 1;
+    }
+  printf ("Sent raw socket\n");
+  return 0;
 }

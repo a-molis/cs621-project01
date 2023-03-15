@@ -10,6 +10,7 @@ static const int UDP_PACKET_TRAIN_LEN = 6000;
 static const int UDP_PACKET_TTL = 255;
 static const int UPP_TIMEOUT = 5;
 static const int TCP_PACKET_SIZE = 2000;
+static const int TCP_SRC_SYN_PORT = 12059;
 
 // TODO move to config
 static const char *random_file = "random_file";

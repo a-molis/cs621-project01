@@ -151,6 +151,7 @@ int udp_client_connect(UDP_CLIENT_CONN client)
 
   struct sockaddr_in *sin = malloc (sizeof (struct sockaddr_in));
   memset (sin, 0, sizeof (*sin));
+  // TODO update to use inet_pton or check if -1
   sin->sin_addr.s_addr = inet_addr(client->ip_address);
   sin->sin_port = htons (client->port);
   sin->sin_family = AF_INET;
