@@ -11,5 +11,6 @@ int server_probe (CONFIG config, char *result);
 int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t, char *result);
 int server_post_probe (CONFIG config, char *result);
 int client_post_probe (CONFIG config);
+int compdetect_single (CONFIG config);
 
 #endif //_COMPDETECT_H_

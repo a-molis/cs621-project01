@@ -6,7 +6,7 @@
 #include "udp_sock_handler.h"
 #include "constants.h"
 #include "config.h"
-#include "compdetect.h"
+#include "comp_utils.h"
 
 struct args {
     char *config_path;

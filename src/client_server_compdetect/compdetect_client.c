@@ -6,7 +6,7 @@
 #include "udp_sock_handler.h"
 #include "tcp_sock_handler.h"
 #include "config.h"
-#include "compdetect.h"
+#include "comp_utils.h"
 
 void comp_client_run (char *config_path);
 

@@ -7,7 +7,7 @@
 #include "udp_sock_handler.h"
 #include "tcp_sock_handler.h"
 #include "config.h"
-#include "compdetect.h"
+#include "comp_utils.h"
 
 int run_server (int port);
 
