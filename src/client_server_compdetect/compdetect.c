@@ -122,6 +122,7 @@ int client_probe(CONFIG config)
       perror ("Failed to destroy upd client");
       return 1;
     }
+  sleep(5);
   printf("Client pre probe stage successfully finished\n");
   return 0;
 }

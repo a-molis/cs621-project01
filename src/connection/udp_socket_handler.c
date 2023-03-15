@@ -113,23 +113,6 @@ UDP_HANDLER udp_server_next_connection (UDP_SERVER server)
   sout->sin_family = AF_INET;
   handler->addr = sout;
   handler->addr_len = sizeof (*sout);
-  char start[MAX_UDP_SIZE];
-
-  int received = udp_recvfrom_n (handler, start, 5);
-  if (received)
-    {
-      perror ("Unable to receive start message for setting up next conn for udp server");
-      return 1;
-    }
-  printf("Server received initial message with %lu bytez %s \n", received, start);
-  char *test_message = "confirm";
-  int sent = udp_sendto_n (handler, test_message, 8);
-  if (sent)
-    {
-      perror ("Unable to send message to set up UDP next connection");
-      return NULL;
-    }
-  printf("Server sent %zu bytes to client\n", sent);
   return handler;
 }
 
@@ -177,10 +160,6 @@ int udp_client_connect(UDP_CLIENT_CONN client)
   client->handler->addr_len = sizeof (*sin);
 
   client->handler->sockfd = sock;
-  int setup = udp_setup_client (client);
-  printf("setup %d\n", setup);
-  if (setup)
-    return 1;
   printf("Created new upd handler in client\n");
   return 0;
 }
