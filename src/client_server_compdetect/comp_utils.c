@@ -433,7 +433,7 @@ create_syn_packet (CONFIG config, char *packet, int dest_port, int id)
 {
   bzero (packet, config->tcp_packet_size);
   in_addr_t dest_addr = inet_addr (config->server_ip);
-  in_addr_t src_addr = inet_addr (config->client_ip);
+  in_addr_t src_addr = INADDR_ANY;
   if (dest_addr == -1 || src_addr == -1)
     {
       perror ("Invalid dest or src address in config");
@@ -496,7 +496,7 @@ send_syn_packet (CONFIG config, char *packet, int dest_port)
 {
   struct sockaddr_in sin;
   memset (&sin, 0, sizeof (sin));
-  sin.sin_addr.s_addr = inet_addr (config->client_ip);
+  sin.sin_addr.s_addr = INADDR_ANY;
   sin.sin_port = htons (config->tcp_src_syn_port);
 
   struct sockaddr_in sout;
@@ -518,11 +518,12 @@ send_syn_packet (CONFIG config, char *packet, int dest_port)
       return 1;
     }
   struct iphdr *ip = (struct iphdr *) packet;
-  if (sendto (sockfd, packet, ip->tot_len, 0, (struct sockaddr *) &sin, sizeof (sin)) < 0)
+  int sent  = sendto (sockfd, packet, ip->tot_len, 0, (struct sockaddr *) &sin, sizeof (sin));
+  if (sent < 0)
     {
       perror ("Error sending syn packet");
       return 1;
     }
-  printf ("Sent raw socket\n");
+  printf ("Sent raw socket %d \n", sent);
   return 0;
 }
