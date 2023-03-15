@@ -43,9 +43,10 @@ void parse_required_params (CONFIG config, const cJSON *json)
   cJSON *tcp_dest_head_syn_port = cJSON_GetObjectItem (json, "tcp_dest_head_syn_port");
   cJSON *tcp_dest_tail_syn_port = cJSON_GetObjectItem (json, "tcp_dest_tail_syn_port");
   cJSON *tcp_probing_port = cJSON_GetObjectItem (json, "tcp_probing_port");
+  cJSON *client_ip = cJSON_GetObjectItem (json, "client_ip");
 
   if (!server_ip || !udp_source_port || !udp_dest_port || !tcp_dest_head_syn_port || !tcp_dest_tail_syn_port
-      || !tcp_probing_port)
+      || !tcp_probing_port || !client_ip)
     {
       free (config);
       perror ("Missing required config parameter");
@@ -58,6 +59,7 @@ void parse_required_params (CONFIG config, const cJSON *json)
   config->tcp_dest_head_syn_port = tcp_dest_head_syn_port->valueint;
   config->tcp_dest_tail_syn_port = tcp_dest_tail_syn_port->valueint;
   config->tcp_probing_port = tcp_probing_port->valueint;
+  strcpy (config->client_ip, client_ip->valuestring);
 }
 
 void parse_optional_params (CONFIG config, const cJSON *json)
@@ -67,6 +69,7 @@ void parse_optional_params (CONFIG config, const cJSON *json)
   cJSON *inter_measure_time = cJSON_GetObjectItem (json, "inter_measure_time");
   cJSON *udp_packet_train_len = cJSON_GetObjectItem (json, "udp_packet_train_len");
   cJSON *udp_packet_ttl = cJSON_GetObjectItem (json, "udp_packet_ttl");
+  cJSON *tcp_packet_size = cJSON_GetObjectItem (json, "tcp_packet_size");
 
   if (!udp_payload_size || udp_payload_size->valueint == 0)
     config->udp_payload_size = UDP_PAYLOAD_SIZE;
@@ -87,6 +90,11 @@ void parse_optional_params (CONFIG config, const cJSON *json)
     config->udp_packet_ttl = UDP_PACKET_TTL;
   else
     config->udp_packet_ttl = udp_packet_ttl->valueint;
+
+  if (!tcp_packet_size || tcp_packet_size->valueint == 0)
+    config->tcp_packet_size = TCP_PACKET_SIZE;
+  else
+    config->tcp_packet_size = tcp_packet_size->valueint;
 }
 
 CONFIG get_config (char *config_path, char *buf)

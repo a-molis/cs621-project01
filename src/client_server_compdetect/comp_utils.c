@@ -8,6 +8,9 @@
 #include <sys/timeb.h>
 #include <signal.h>
 #include <errno.h>
+#include <netinet/tcp.h>
+#include <netinet/ip.h>
+#include <arpa/inet.h>
 #include "comp_utils.h"
 #include "config.h"
 #include "constants.h"
@@ -17,6 +20,17 @@
 // TODO test with running client first for all steps
 int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf);
 int get_high_entropy_data (CONFIG p_data, char data[]);
+int send_head_tcp_syn (CONFIG config);
+int create_syn_packet (CONFIG config, char *packet);
+
+/**
+ * This is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
+ * @param buf The buffer to create the checksum with
+ * @param size The size of the buf
+ * @return the checksum
+ */
+unsigned short checksum(const char *buf, unsigned size)
+
 int
 client_pre_probe (CONFIG config, char *config_str)
 {
@@ -374,8 +388,78 @@ client_post_probe (CONFIG config)
   return 0;
 }
 
-int compdetect_single (CONFIG config)
+int
+compdetect_single (CONFIG config)
 {
-  printf ("config server ip %s\n", config->server_ip);
+  printf ("tcp_packet_size: %d\n", config->tcp_packet_size);
+  if (send_head_tcp_syn (config))
+    {
+      perror ("Failed to send_head_tcp_syn packet");
+      return 1;
+    }
+
   return 0;
+}
+
+int
+send_head_tcp_syn (CONFIG config)
+{
+  char *packet = malloc (sizeof (char) * config->tcp_packet_size);
+  if (packet == NULL)
+    {
+      perror ("Error allocating packet with malloc");
+      return 1;
+    }
+  if (create_syn_packet(config, packet))
+    {
+      perror ("Error creating syn packet");
+      free (packet);
+      return 1;
+    }
+  printf ("Sent SYN packet to server at %s on port %d\n", config->server_ip, config->tcp_dest_head_syn_port);
+  free (packet);
+  return 0;
+}
+
+int
+create_syn_packet (CONFIG config, char *packet)
+{
+  bzero (packet, config->tcp_packet_size);
+  uint32_t src_addr = inet_addr (config->client_ip);
+  struct iphdr *ip = (struct iphdr *) packet;
+  struct tcphdr *tcp = (packet + sizeof (struct iphdr));
+  ip->version = 4;
+  ip->ihl = 5;
+  ip->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr);
+  ip->id = htons (1);
+  ip->protocol = IPPROTO_TCP;
+  ip->check = checksum (packet, ip->tot_len);
+  printf("checksum %s\n", ip->check);[]
+
+  return 0;
+}
+
+unsigned short checksum(const char *buf, unsigned size)
+{
+  unsigned sum = 0, i;
+
+  /* Accumulate checksum */
+  for (i = 0; i < size - 1; i += 2)
+    {
+      unsigned short word16 = *(unsigned short *) &buf[i];
+      sum += word16;
+    }
+
+  /* Handle odd-sized case */
+  if (size & 1)
+    {
+      unsigned short word16 = (unsigned char) buf[i];
+      sum += word16;
+    }
+
+  /* Fold to get the ones-complement result */
+  while (sum >> 16) sum = (sum & 0xFFFF)+(sum >> 16);
+
+  /* Invert to get the negative in ones-complement arithmetic */
+  return ~sum;
 }

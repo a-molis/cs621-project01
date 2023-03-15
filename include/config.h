@@ -6,6 +6,7 @@
 struct CONFIG_DATA
 {
     char server_ip[16];
+    char client_ip[16];
     int udp_source_port;
     int udp_dest_port;
     int tcp_dest_head_syn_port;
@@ -15,6 +16,7 @@ struct CONFIG_DATA
     int inter_measure_time;
     int udp_packet_train_len;
     int udp_packet_ttl;
+    int tcp_packet_size;
 };
 
 typedef struct CONFIG_DATA *CONFIG;
