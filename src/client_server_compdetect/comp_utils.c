@@ -21,7 +21,7 @@
 int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf);
 int get_high_entropy_data (CONFIG p_data, char data[]);
 int send_head_tcp_syn (CONFIG config);
-int create_syn_packet (CONFIG config, char *packet, int dest_port, int id);
+int new_syn_packet (CONFIG config, char *packet, int dest_port, int id);
 
 /**
  * This is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
@@ -411,7 +411,7 @@ send_head_tcp_syn (CONFIG config)
       perror ("Error allocating packet with malloc");
       return 1;
     }
-  if (create_syn_packet(config, packet, config->tcp_dest_head_syn_port, 1))
+  if (new_syn_packet (config, packet, config->tcp_dest_head_syn_port, 1))
     {
       perror ("Error creating syn packet");
       free (packet);
@@ -429,7 +429,7 @@ send_head_tcp_syn (CONFIG config)
 }
 
 int
-create_syn_packet (CONFIG config, char *packet, int dest_port, int id)
+new_syn_packet (CONFIG config, char *packet, int dest_port, int id)
 {
   bzero (packet, config->tcp_packet_size);
   in_addr_t dest_addr = inet_addr (config->server_ip);
@@ -457,9 +457,10 @@ create_syn_packet (CONFIG config, char *packet, int dest_port, int id)
   tcp->seq = htonl (1);
   tcp->syn = 1;
   tcp->window = htons (64240);
+  tcp->doff = 5;
 
   tcp->check = checksum ((const char *) tcp, 20);
-  ip->check = checksum (packet, ip->tot_len);
+  ip->check = checksum (packet, sizeof (struct iphdr) + sizeof (struct tcphdr));
   printf("checksum %d\n", ip->check);
   return 0;
 }
