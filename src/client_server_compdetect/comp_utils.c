@@ -25,11 +25,11 @@ int new_syn_packet (CONFIG config, char *packet, int dest_port, int id);
 
 /**
  * This is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
- * @param buf The buffer to create the checksum with
+ * @param buf The buffer to create the checksum2 with
  * @param size The size of the buf
- * @return the checksum
+ * @return the checksum2
  */
-unsigned short checksum(const char *buf, unsigned size);
+unsigned short checksum2(const char *buf, unsigned size);
 
 int send_syn_packet (CONFIG config, char *packet, int dest_port);
 int
@@ -459,19 +459,19 @@ new_syn_packet (CONFIG config, char *packet, int dest_port, int id)
   tcp->window = htons (64240);
   tcp->doff = 5;
 
-  tcp->check = checksum ((const char *) tcp, 20);
-  ip->check = checksum (packet, sizeof (struct iphdr) + sizeof (struct tcphdr));
-  printf("checksum %d\n", ip->check);
+  tcp->check = checksum2 ((const char *) tcp, 20);
+  ip->check = checksum2 (packet, sizeof (struct iphdr) + sizeof (struct tcphdr));
+  printf("checksum2 %d\n", ip->check);
   return 0;
 }
 
 // This function is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
 unsigned short
-checksum(const char *buf, unsigned size)
+checksum2(const char *buf, unsigned size)
 {
   unsigned sum = 0, i;
 
-  /* Accumulate checksum */
+  /* Accumulate checksum2 */
   for (i = 0; i < size - 1; i += 2)
     {
       unsigned short word16 = *(unsigned short *) &buf[i];

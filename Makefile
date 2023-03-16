@@ -12,7 +12,7 @@ test_bin=$(test_dir)/simple_client $(test_dir)/simple_server
 test_run=$(test_dir)/test_runner.sh
 test_files=$(test_dir)/test_simple_client_server $(test_dir)/test_tcp_send test/test_simple_udp_conn test/test_udp_setup test/test_pre_probe test/test_udp_probe
 exe=$(addprefix ./, $(test_files))
-bin=src/client_server_compdetect/compdetect_client src/client_server_compdetect/compdetect_server src/client_server_compdetect/compdetect
+bin=src/client_server_compdetect/compdetect_client src/client_server_compdetect/compdetect_server src/client_server_compdetect/compdetect src/client_server_compdetect/raw_test
 
 all: $(test_bin) $(test_files) $(bin)
 
