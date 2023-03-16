@@ -1,6 +1,6 @@
 {
-  "server_ip": "127.0.0.1",
-  "client_ip": "127.0.0.1",
+  "server_ip": "10.10.13.176",
+  "client_ip": "10.10.13.9",
   "udp_source_port": 2001,
   "udp_dest_port": 2001,
   "tcp_dest_head_syn_port": 12060,
@@ -11,5 +11,5 @@
   "inter_measure_time": 15,
   "udp_packet_train_len": 6000,
   "udp_packet_ttl": 255,
-  "tcp_packet_size": 2000
+  "raw_packet_size": 4096
 }

@@ -16,7 +16,7 @@ struct CONFIG_DATA
     int inter_measure_time;
     int udp_packet_train_len;
     int udp_packet_ttl;
-    int tcp_packet_size;
+    int raw_packet_size;
     int tcp_src_syn_port;
 };
 
