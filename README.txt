@@ -6,4 +6,4 @@ https://github.com/DaveGamble/cJSON
 
 The config file has the following field's
 client_ip
-tcp_packet_size
+raw_packet_size

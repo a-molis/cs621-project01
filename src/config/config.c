@@ -69,7 +69,7 @@ void parse_optional_params (CONFIG config, const cJSON *json)
   cJSON *inter_measure_time = cJSON_GetObjectItem (json, "inter_measure_time");
   cJSON *udp_packet_train_len = cJSON_GetObjectItem (json, "udp_packet_train_len");
   cJSON *udp_packet_ttl = cJSON_GetObjectItem (json, "udp_packet_ttl");
-  cJSON *tcp_packet_size = cJSON_GetObjectItem (json, "tcp_packet_size");
+  cJSON *raw_packet_size = cJSON_GetObjectItem (json, "raw_packet_size");
   cJSON *tcp_src_syn_port = cJSON_GetObjectItem (json, "tcp_src_syn_port");
 
   if (!udp_payload_size || udp_payload_size->valueint == 0)
@@ -92,10 +92,10 @@ void parse_optional_params (CONFIG config, const cJSON *json)
   else
     config->udp_packet_ttl = udp_packet_ttl->valueint;
 
-  if (!tcp_packet_size || tcp_packet_size->valueint == 0)
-    config->tcp_packet_size = TCP_PACKET_SIZE;
+  if (!raw_packet_size || raw_packet_size->valueint == 0)
+    config->raw_packet_size = RAW_PACKET_SIZE;
   else
-    config->tcp_packet_size = tcp_packet_size->valueint;
+    config->raw_packet_size = raw_packet_size->valueint;
 
   if (!tcp_src_syn_port || tcp_src_syn_port->valueint == 0)
     config->tcp_src_syn_port = TCP_SRC_SYN_PORT;

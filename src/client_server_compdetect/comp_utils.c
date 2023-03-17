@@ -21,17 +21,18 @@
 int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf);
 int get_high_entropy_data (CONFIG p_data, char data[]);
 int send_head_tcp_syn (CONFIG config);
-int new_syn_packet (CONFIG config, char *packet, int dest_port, int id);
+int new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet, int packet_len, int id);
 
 /**
  * This is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
- * @param buf The buffer to create the checksum with
+ * @param buf The buffer to create the checksum2 with
  * @param size The size of the buf
- * @return the checksum
+ * @return the checksum2
  */
-unsigned short checksum(const char *buf, unsigned size);
+unsigned short checksum2(const char *buf, unsigned size);
 
-int send_syn_packet (CONFIG config, char *packet, int dest_port);
+int send_syn_packet (struct sockaddr_in *sin, char *packet);
+
 int
 client_pre_probe (CONFIG config, char *config_str)
 {
@@ -392,7 +393,7 @@ client_post_probe (CONFIG config)
 int
 compdetect_single (CONFIG config)
 {
-  printf ("tcp_packet_size: %d\n", config->tcp_packet_size);
+  printf ("raw_packet_size: %d\n", config->raw_packet_size);
   if (send_head_tcp_syn (config))
     {
       perror ("Failed to send_head_tcp_syn packet");
@@ -405,19 +406,33 @@ compdetect_single (CONFIG config)
 int
 send_head_tcp_syn (CONFIG config)
 {
-  char *packet = malloc (sizeof (char) * config->tcp_packet_size);
+  char *packet = malloc (sizeof (char) * config->raw_packet_size);
   if (packet == NULL)
     {
       perror ("Error allocating packet with malloc");
       return 1;
     }
-  if (new_syn_packet (config, packet, config->tcp_dest_head_syn_port, 1))
+  struct sockaddr_in sin;
+  memset (&sin, 0, sizeof (sin));
+  // TODO update to use inet_pton or check if inet_addr == -1
+  sin.sin_addr.s_addr = inet_addr (config->client_ip);
+  sin.sin_port = htons (config->tcp_src_syn_port);
+  sin.sin_family = AF_INET;
+
+  struct sockaddr_in sout;
+  memset (&sout, 0, sizeof (sout));
+  // TODO update to use inet_pton or check if inet_addr == -1
+  sout.sin_addr.s_addr = inet_addr (config->server_ip);
+  sout.sin_port = htons (config->tcp_dest_head_syn_port);
+  sout.sin_family = AF_INET;
+
+  if (new_syn_packet (&sin, &sout, packet, config->raw_packet_size, 1))
     {
       perror ("Error creating syn packet");
       free (packet);
       return 1;
     }
-  if (send_syn_packet (config, packet, config->tcp_dest_head_syn_port))
+  if (send_syn_packet (&sin, packet))
     {
       perror ("Error sending raw packet for head syn packet");
       free (packet);
@@ -428,17 +443,20 @@ send_head_tcp_syn (CONFIG config)
   return 0;
 }
 
-int
-new_syn_packet (CONFIG config, char *packet, int dest_port, int id)
+// pseudo header form TCP rfc and from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L12
+struct pseudo_header
 {
-  bzero (packet, config->tcp_packet_size);
-  in_addr_t dest_addr = inet_addr (config->server_ip);
-  in_addr_t src_addr = INADDR_ANY;
-  if (dest_addr == -1 || src_addr == -1)
-    {
-      perror ("Invalid dest or src address in config");
-      return 1;
-    }
+    u_int32_t source_address;
+    u_int32_t dest_address;
+    u_int8_t placeholder;
+    u_int8_t protocol;
+    u_int16_t tcp_length;
+};
+
+int
+new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet, int packet_len, int id)
+{
+  bzero (packet, packet_len);
   struct iphdr *ip = (struct iphdr *) packet;
   struct tcphdr *tcp = (struct tcphdr *) (packet + sizeof (struct iphdr));
   ip->version = 4;
@@ -448,30 +466,46 @@ new_syn_packet (CONFIG config, char *packet, int dest_port, int id)
   ip->id = htons (id);
   ip->protocol = IPPROTO_TCP;
 
+  ip->daddr = sin->sin_addr.s_addr;
+  ip->saddr = sout->sin_addr.s_addr;
 
-  ip->daddr = dest_addr;
-  ip->saddr = src_addr;
-
-  tcp->source = htons (config->udp_source_port);
-  tcp->dest = htons (dest_port);
+  tcp->source = sin->sin_port;
+  tcp->dest = sout->sin_port;
   tcp->seq = htonl (1);
   tcp->syn = 1;
   tcp->window = htons (64240);
   tcp->doff = 5;
 
-  tcp->check = checksum ((const char *) tcp, 20);
-  ip->check = checksum (packet, sizeof (struct iphdr) + sizeof (struct tcphdr));
-  printf("checksum %d\n", ip->check);
+  struct pseudo_header tcp_pseudo_header;
+  tcp_pseudo_header.source_address = sin->sin_addr.s_addr;
+  tcp_pseudo_header.dest_address = sout->sin_addr.s_addr;
+  tcp_pseudo_header.protocol = IPPROTO_TCP;
+  tcp_pseudo_header.placeholder = 0;
+  tcp_pseudo_header.tcp_length = htons (sizeof (struct tcphdr));
+  int pseudo_size = sizeof (struct pseudo_header) + sizeof (struct tcphdr);
+  char* pseudo_packet = malloc (pseudo_size);
+  if (pseudo_packet == NULL)
+    {
+      perror ("Failed to allocate memory for pseudo packet");
+      return 1;
+    }
+  memcpy (pseudo_packet, (void *) &tcp_pseudo_header, sizeof (struct pseudo_header));
+  memcpy (pseudo_packet + sizeof (struct pseudo_header), (void *) tcp, sizeof (struct tcphdr));
+  tcp->check = checksum2 ((const char *) pseudo_packet, pseudo_size);
+  ip->check = checksum2 (packet, ip->tot_len);
+  printf("checksum2 %d\n", ip->check);
+  printf("tcp checksum %d\n", tcp->check);
+  free (pseudo_packet);
   return 0;
 }
 
 // This function is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
 unsigned short
-checksum(const char *buf, unsigned size)
+checksum2(const char *buf, unsigned size)
 {
   unsigned sum = 0, i;
 
-  /* Accumulate checksum */
+  /* Accumulate checksum2 */
   for (i = 0; i < size - 1; i += 2)
     {
       unsigned short word16 = *(unsigned short *) &buf[i];
@@ -493,18 +527,8 @@ checksum(const char *buf, unsigned size)
 }
 
 int
-send_syn_packet (CONFIG config, char *packet, int dest_port)
+send_syn_packet (struct sockaddr_in *sin, char *packet)
 {
-  struct sockaddr_in sin;
-  memset (&sin, 0, sizeof (sin));
-  sin.sin_addr.s_addr = INADDR_ANY;
-  sin.sin_port = htons (config->tcp_src_syn_port);
-
-  struct sockaddr_in sout;
-  memset (&sout, 0, sizeof (sout));
-  sout.sin_addr.s_addr = inet_addr (config->server_ip);
-  sout.sin_port = htons (dest_port);
-
   int sockfd = socket (AF_INET, SOCK_RAW, IPPROTO_TCP);
   if (sockfd < 0)
     {
@@ -519,7 +543,7 @@ send_syn_packet (CONFIG config, char *packet, int dest_port)
       return 1;
     }
   struct iphdr *ip = (struct iphdr *) packet;
-  int sent  = sendto (sockfd, packet, ip->tot_len, 0, (struct sockaddr *) &sin, sizeof (sin));
+  int sent  = sendto (sockfd, packet, ip->tot_len, 0, (struct sockaddr *) sin, sizeof (*sin));
   if (sent < 0)
     {
       perror ("Error sending syn packet");
