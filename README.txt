@@ -9,4 +9,5 @@ client_ip
 raw_packet_size
 
 
-This was tested on vm slices made by USFCA CS support. The VMs are running AlmaLinux 9.1 (Lime Lynx) x86_64.
+This was tested on vm slices made by USFCA CS support. The VMs are running AlmaLinux 9.1 (Lime Lynx) x86_64. On this version of AlmaLinux pcap.h is installed with the following command.
+sudo yum install libpcap-devel

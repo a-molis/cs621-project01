@@ -11,6 +11,8 @@
 #include <arpa/inet.h>
 #include <linux/tcp.h>
 #include <linux/ip.h>
+#include <linux/if_ether.h>
+#include <pcap/pcap.h>
 #include "comp_utils.h"
 #include "config.h"
 #include "constants.h"
@@ -18,18 +20,29 @@
 #include "udp_sock_handler.h"
 
 // TODO test with running client first for all steps
+
 int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf);
 int get_high_entropy_data (CONFIG p_data, char data[]);
+
+// TODO refactor to have separate file for raw packet functions
 int send_head_tcp_syn (CONFIG config);
 int new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet, int packet_len, int id);
+void packet_handler (unsigned char *args, const struct pcap_pkthdr *header, const unsigned char *packet);
+int pcap_listener (CONFIG config);
+
+struct pcap_handler_args
+{
+    int *count;
+    struct timeb *recv_times;
+};
 
 /**
  * This is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
- * @param buf The buffer to create the checksum2 with
+ * @param buf The buffer to create the checksum with
  * @param size The size of the buf
- * @return the checksum2
+ * @return the checksum
  */
-unsigned short checksum2(const char *buf, unsigned size);
+unsigned short checksum(const char *buf, unsigned size);
 
 int send_syn_packet (struct sockaddr_in *sin, char *packet);
 
@@ -390,16 +403,25 @@ client_post_probe (CONFIG config)
   return 0;
 }
 
+
 int
 compdetect_single (CONFIG config)
 {
+
   printf ("raw_packet_size: %d\n", config->raw_packet_size);
   if (send_head_tcp_syn (config))
     {
       perror ("Failed to send_head_tcp_syn packet");
       return 1;
     }
-
+  if (pcap_listener (config))
+    {
+      perror ("Failed to start pcap_listener");
+      return 1;
+    }
+  printf ("done with listener call\n");
+  sleep (5);
+  printf ("done sleeping");
   return 0;
 }
 
@@ -491,9 +513,9 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
     }
   memcpy (pseudo_packet, (void *) &tcp_pseudo_header, sizeof (struct pseudo_header));
   memcpy (pseudo_packet + sizeof (struct pseudo_header), (void *) tcp, sizeof (struct tcphdr));
-  tcp->check = checksum2 ((const char *) pseudo_packet, pseudo_size);
-  ip->check = checksum2 (packet, ip->tot_len);
-  printf("checksum2 %d\n", ip->check);
+  tcp->check = checksum ((const char *) pseudo_packet, pseudo_size);
+  ip->check = checksum (packet, ip->tot_len);
+  printf("checksum %d\n", ip->check);
   printf("tcp checksum %d\n", tcp->check);
   free (pseudo_packet);
   return 0;
@@ -501,11 +523,11 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
 
 // This function is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
 unsigned short
-checksum2(const char *buf, unsigned size)
+checksum(const char *buf, unsigned size)
 {
   unsigned sum = 0, i;
 
-  /* Accumulate checksum2 */
+  /* Accumulate checksum */
   for (i = 0; i < size - 1; i += 2)
     {
       unsigned short word16 = *(unsigned short *) &buf[i];
@@ -550,5 +572,64 @@ send_syn_packet (struct sockaddr_in *sin, char *packet)
       return 1;
     }
   printf ("Sent raw socket %d \n", sent);
+  return 0;
+}
+
+void
+packet_handler (unsigned char *args, const struct pcap_pkthdr *header, const unsigned char *packet)
+{
+  struct pcap_handler_args *input_args = (struct pcap_handler_args*) args;
+  *input_args->count += 1;
+  printf ("Received packet number %d from pcap_loop\n", *input_args->count);
+  if (*input_args->count == RST_PACKET_TOTAL)
+    {
+      printf ("Received enough data\n");
+
+    }
+}
+
+int
+pcap_listener (CONFIG config)
+{
+  printf ("Starting pcap listener\n");
+  char *device;
+  char error[PCAP_ERRBUF_SIZE];
+  char filter_expression[100];
+  if (sprintf (filter_expression, "(host %s and %s) and (src port %d or %d)",
+               config->server_ip,
+               config->client_ip,
+               config->tcp_dest_head_syn_port,
+               config->tcp_dest_tail_syn_port) < 0)
+    {
+      perror ("Error with sprintf format for filter");
+      return 1;
+    }
+  printf ("filter expression %s\n", filter_expression);
+  pcap_t *handle;
+  device = pcap_lookupdev (error);
+  if (device == NULL)
+    {
+      printf ("Failed to get network device %s\n", error);
+      return 1;
+    }
+  handle = pcap_open_live (device, BUFSIZ, 0, PCAP_TIMEOUT, error);
+
+  if (handle == NULL)
+    {
+      perror ("Error starting pcap_open_live");
+      return 1;
+    }
+  if (pcap_setnonblock(handle, 0, error))
+    {
+      printf ("Error setting pcap to non block %s\n", error);
+      return 1;
+    }
+  printf ("Started pcap_open_live\n");
+  int count = 0;
+  struct timeb recv_times[RST_PACKET_TOTAL];
+  struct pcap_handler_args args = { &count, recv_times};
+  printf ("Started pcap loop\n");
+  pcap_loop (handle, 5, packet_handler, (unsigned char*) &args);
+  printf ("ended pcap loop\n");
   return 0;
 }

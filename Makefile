@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS += -g -std=c99 -Wall -I include -include include/config.h -include include/udp_sock_handler.h -I ext/cJSON
+CFLAGS += -g -std=c99 -Wall -I include -include include/config.h -include include/udp_sock_handler.h -I ext/cJSON -D_GNU_SOURCE
+LDLIBS += -lpcap
 
 test_dir=test
 src=src
@@ -27,13 +28,13 @@ $(OBJ): %.o: %.c
 $(OBJ): $(lib_ob)
 
 $(bin): %: %.c
-	$(CC) $(CFLAGS) $(lib_ob) $^ -o $@
+	$(CC) $(CFLAGS) $(LDLIBS) $(lib_ob) $^ -o $@
 
 $(test_bin): %: %.o
-	 $(CC) $(CFLAGS) $(lib_ob) $^ -o $@
+	 $(CC) $(CFLAGS) $(LDLIBS) $(lib_ob) $^ -o $@
 
 $(test_files): %: %.o
-	$(CC) $(CFLAGS) $(lib_ob) $^ -o $@
+	$(CC) $(CFLAGS) $(LDLIBS) $(lib_ob) $^ -o $@
 
 clean:
 	-rm $(lib_ob)
