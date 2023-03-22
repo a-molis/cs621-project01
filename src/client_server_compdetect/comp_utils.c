@@ -410,6 +410,21 @@ client_post_probe (CONFIG config)
 int
 compdetect_single (CONFIG config)
 {
+  printf("Starting client pre probe on ip %s on port %d\n", config->server_ip, config->udp_dest_port);
+  UDP_CLIENT_CONN udp_client = udp_new_client (config->server_ip, config->udp_dest_port);
+  if (udp_client == NULL)
+    {
+      perror ("Failed to create udp_client");
+      return 1;
+    }
+  printf("Setting up client upd connection\n");
+  if (udp_client_connect (udp_client))
+    {
+      perror ("Client failed to set up UDP connection with server in client probe stage\n");
+      return 1;
+    }
+  printf("Client set up udp client upd connection\n");
+
   // TODO close socket
   struct sockaddr_in sin;
   memset (&sin, 0, sizeof (sin));
@@ -479,7 +494,14 @@ compdetect_single (CONFIG config)
       free (recv_times);
       return 1;
     }
-  sleep(1);
+  char buf[config->udp_payload_size];
+  bzero (buf, config->udp_payload_size);
+  int send_low = send_udp_train (udp_client, config, low, buf);
+  if (send_low)
+    {
+      perror ("Client failed to send low entropy data");
+      return 1;
+    }
   if (send_head_tcp_syn (config, sockfd, &sin, &tail_sockaddr_in))
     {
       perror ("Failed to send_head_tcp_syn packet");
@@ -487,7 +509,7 @@ compdetect_single (CONFIG config)
       free (recv_times);
       return 1;
     }
-  sleep(4);
+  sleep (config->inter_measure_time);
   if (send_head_tcp_syn (config, sockfd, &sin, &head_sockaddr_in))
     {
       perror ("Failed to send_head_tcp_syn packet");
@@ -495,7 +517,17 @@ compdetect_single (CONFIG config)
       free (recv_times);
       return 1;
     }
-  sleep(1);
+  char high_data[config->udp_payload_size];
+  if (get_high_entropy_data(config, high_data))
+    {
+      perror ("Unable to open high entropy data");
+      return 1;
+    }
+  if (send_udp_train (udp_client, config, high, high_data))
+    {
+      perror ("Client failed to send low entropy data");
+      return 1;
+    }
   if (send_head_tcp_syn (config, sockfd, &sin, &tail_sockaddr_in))
     {
       perror ("Failed to send_head_tcp_syn packet");
@@ -503,8 +535,12 @@ compdetect_single (CONFIG config)
       free (recv_times);
       return 1;
     }
+  if (udp_destroy_client (udp_client))
+    {
+      perror ("Failed to destroy upd client");
+      return 1;
+    }
 
-  sleep (3);
   printf ("Trying to join thread\n");
   pthread_join(rst_listener_thread, NULL);
   printf ("joined thread\n");
@@ -551,14 +587,6 @@ recv_rst (void *inputs)
           struct timeb recv_time;
           ftime(&recv_time);
           *(args->recv_times + *args->count) = recv_time;
-          *args->count += 1;
-        }
-      if (ip->saddr == args->sin->sin_addr.s_addr)
-        {
-          printf ("IHL of ip header %d\n", ip->ihl);
-          char saddr[INET_ADDRSTRLEN];
-          inet_ntop (AF_INET, &ip->saddr, saddr, INET_ADDRSTRLEN);
-          printf ("Source IP %d %s in packet for count %d\n", ip->saddr, saddr, *args->count);
           *args->count += 1;
         }
     }
