@@ -11,7 +11,9 @@
 #include <arpa/inet.h>
 #include <linux/tcp.h>
 #include <linux/ip.h>
+#include <linux/if.h>
 #include <pthread.h>
+#include <sys/ioctl.h>
 #include "comp_utils.h"
 #include "config.h"
 #include "constants.h"
@@ -27,7 +29,7 @@ int send_head_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struc
 int new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet, int packet_len, int id);
 
 int send_syn_packet (int sockfd, struct sockaddr_in *sin, char *packet);
-int create_raw_socket (int *sockfd);
+int create_raw_socket (int *sockfd, char *interface);
 /**
  * This is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
  * @param buf The buffer to create the checksum2 with
@@ -409,6 +411,7 @@ client_post_probe (CONFIG config)
 int
 compdetect_single (CONFIG config)
 {
+  // TODO close socket
   struct sockaddr_in sin;
   memset (&sin, 0, sizeof (sin));
   // TODO update to use inet_pton or check if inet_addr == -1
@@ -424,7 +427,8 @@ compdetect_single (CONFIG config)
   sout.sin_family = AF_INET;
 
   int sockfd = -1;
-  if ( create_raw_socket (&sockfd))
+  char *device = "enp1s0";
+  if ( create_raw_socket (&sockfd, device))
     {
       perror ("Unable to create raw socket");
       return 1;
@@ -655,7 +659,7 @@ send_syn_packet (int sockfd, struct sockaddr_in *sin, char *packet)
 }
 
 int
-create_raw_socket (int *sockfd)
+create_raw_socket (int *sockfd, char *interface)
 {
   *sockfd = socket (AF_INET, SOCK_RAW, IPPROTO_TCP);
   if (*sockfd < 0)
@@ -668,6 +672,29 @@ create_raw_socket (int *sockfd)
   if (setsockopt (*sockfd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
     {
       perror ("Failed to set socket opt for raw socket");
+      return 1;
+    }
+
+
+  struct ifreq ifr;
+  memset (&ifr, 0, sizeof (struct ifreq));
+
+  // TODO check if need error handling around strcpy
+  strcpy (ifr.ifr_ifrn.ifrn_name, interface);
+  if (ioctl (*sockfd, SIOCGIFFLAGS, &ifr) == -1)
+    {
+      perror ("Unable to get flags for network interface");
+      return 1;
+    }
+  ifr.ifr_ifru.ifru_flags |= IFF_PROMISC;
+  if (ioctl (*sockfd, SIOCGIFFLAGS, &ifr) == -1)
+    {
+      perror ("Unable to set network interface to promiscuous mode");
+      return 1;
+    }
+  if (ioctl (*sockfd, SIOCGIFINDEX, &ifr) < 0)
+    {
+      perror ("Unable to configure interface");
       return 1;
     }
   return 0;
