@@ -557,7 +557,7 @@ send_head_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct so
       free (packet);
       return 1;
     }
-  if (send_syn_packet (sockfd, sin, packet))
+  if (send_syn_packet (sockfd, sout, packet))
     {
       perror ("Error sending raw packet for head syn packet");
       free (packet);
@@ -596,8 +596,8 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
   ip->check = 0;
   ip->protocol = IPPROTO_TCP;
 
-  ip->daddr = sin->sin_addr.s_addr;
-  ip->saddr = sout->sin_addr.s_addr;
+  ip->daddr = sout->sin_addr.s_addr;
+  ip->saddr = sin->sin_addr.s_addr;
 
   tcp->source = sin->sin_port;
   tcp->dest = sout->sin_port;
