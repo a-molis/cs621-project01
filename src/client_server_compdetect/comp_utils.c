@@ -462,7 +462,7 @@ compdetect_single (CONFIG config)
       free (recv_times);
       return 1;
     }
-  sleep (2);
+
   printf ("raw_packet_size: %d\n", config->raw_packet_size);
   if (send_head_tcp_syn (config, sockfd, &sin, &sout))
     {
@@ -471,9 +471,9 @@ compdetect_single (CONFIG config)
       free (recv_times);
       return 1;
     }
-  sleep (3);
+  //sleep (3);
   printf ("Trying to join thread\n");
-  pthread_join(rst_listener_thread, NULL);
+  //pthread_join(rst_listener_thread, NULL);
   printf ("joined thread\n");
   free (args);
   free (recv_times);
@@ -584,11 +584,16 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
   bzero (packet, packet_len);
   struct iphdr *ip = (struct iphdr *) packet;
   struct tcphdr *tcp = (struct tcphdr *) (packet + sizeof (struct iphdr));
+  bzero (tcp, sizeof (struct tcphdr));
+
   ip->version = 4;
   ip->ihl = 5;
+  ip->tos = 0;
   ip->ttl = 32;
   ip->tot_len = sizeof (struct tcphdr) + sizeof (struct iphdr);
   ip->id = htons (id);
+  ip->frag_off = 0;
+  ip->check = 0;
   ip->protocol = IPPROTO_TCP;
 
   ip->daddr = sin->sin_addr.s_addr;
@@ -597,7 +602,15 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
   tcp->source = sin->sin_port;
   tcp->dest = sout->sin_port;
   tcp->seq = htonl (1);
+  tcp->ack_seq = htonl (0);
   tcp->syn = 1;
+  tcp->cwr = 0;
+  tcp->urg = 0;
+  tcp->ack = 0;
+  tcp->psh = 0;
+  tcp->rst = 0;
+  tcp->fin = 0;
+
   tcp->window = htons (64240);
   tcp->doff = 5;
 
