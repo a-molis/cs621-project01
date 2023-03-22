@@ -28,7 +28,7 @@ int get_high_entropy_data (CONFIG p_data, char data[]);
 int send_head_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockaddr_in *sout);
 int new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet, int packet_len, int id);
 
-int send_syn_packet (int sockfd, struct sockaddr_in *sin, char *packet);
+int send_syn_packet (int sockfd, struct sockaddr_in *sout, char *packet);
 int create_raw_socket (int *sockfd, char *interface);
 /**
  * This is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
@@ -427,6 +427,8 @@ compdetect_single (CONFIG config)
   sout.sin_family = AF_INET;
 
   int sockfd = -1;
+
+  // TODO move device name to config file
   char *device = "enp1s0";
   if ( create_raw_socket (&sockfd, device))
     {
@@ -471,9 +473,9 @@ compdetect_single (CONFIG config)
       free (recv_times);
       return 1;
     }
-  //sleep (3);
+  sleep (3);
   printf ("Trying to join thread\n");
-  //pthread_join(rst_listener_thread, NULL);
+  pthread_join(rst_listener_thread, NULL);
   printf ("joined thread\n");
   free (args);
   free (recv_times);
@@ -492,8 +494,8 @@ recv_rst (void *inputs)
   printf ("config source IIP = %s\n", args->config->client_ip);
   printf ("bar\n");
   printf ("sin addr %d\n", args->sin->sin_addr.s_addr);
-//  while (*args->count < RST_PACKET_TOTAL - 1)
-  while (*args->count < 3)
+  uint16_t tcp_dest_head_syn_port = htons (args->config->tcp_dest_head_syn_port);
+  while (*args->count < RST_PACKET_TOTAL - 1)
     {
       received = recvfrom (*args->sockfd, buf, args->config->raw_packet_size, 0, NULL, NULL);
       if (received == 0)
@@ -503,12 +505,25 @@ recv_rst (void *inputs)
       struct iphdr *ip = (struct iphdr *) buf;
 
       struct tcphdr *tcp = (struct tcphdr *) (buf + (ip->ihl * 4));
-      if (tcp->dest == args->sout->sin_port)
+      if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_head_syn_port && tcp->rst)
         {
-          printf ("Port found!!\n");
+
+          printf ("RST found!!\n");
           char addr0[INET_ADDRSTRLEN];
           inet_ntop (AF_INET, &ip->saddr, addr0, INET_ADDRSTRLEN);
           printf ("Source addr for port found is %s\n", addr0);
+          struct timeb recv_time;
+          ftime(&recv_time);
+          *(args->recv_times + *args->count) = recv_time;
+          for (int i=0; i<4; i++)
+            {
+              struct timeb current_time = *(args->recv_times + i);
+              if (current_time.millitm != 0)
+                printf ("Index %d is mili at %d\n", i, current_time.millitm);
+              else
+                printf ("Index %d has no data\n", i);
+            }
+          *args->count += 1;
         }
       if (ip->saddr == args->sin->sin_addr.s_addr)
         {
@@ -664,10 +679,10 @@ checksum2(const char *buf, unsigned size)
 }
 
 int
-send_syn_packet (int sockfd, struct sockaddr_in *sin, char *packet)
+send_syn_packet (int sockfd, struct sockaddr_in *sout, char *packet)
 {
   struct iphdr *ip = (struct iphdr *) packet;
-  int sent  = sendto (sockfd, packet, ip->tot_len, 0, (struct sockaddr *) sin, sizeof (*sin));
+  int sent  = sendto (sockfd, packet, ip->tot_len, 0, (struct sockaddr *) sout, sizeof (*sout));
   if (sent < 0)
     {
       perror ("Error sending syn packet");
