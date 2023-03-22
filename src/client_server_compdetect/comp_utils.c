@@ -407,7 +407,6 @@ client_post_probe (CONFIG config)
 
 
 
-
 int
 compdetect_single (CONFIG config)
 {
@@ -507,7 +506,6 @@ recv_rst (void *inputs)
       struct tcphdr *tcp = (struct tcphdr *) (buf + (ip->ihl * 4));
       if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_head_syn_port && tcp->rst)
         {
-
           printf ("RST found!!\n");
           char addr0[INET_ADDRSTRLEN];
           inet_ntop (AF_INET, &ip->saddr, addr0, INET_ADDRSTRLEN);
@@ -709,7 +707,6 @@ create_raw_socket (int *sockfd, char *interface)
       return 1;
     }
 
-
   struct ifreq ifr;
   memset (&ifr, 0, sizeof (struct ifreq));
 
@@ -724,11 +721,6 @@ create_raw_socket (int *sockfd, char *interface)
   if (ioctl (*sockfd, SIOCGIFFLAGS, &ifr) == -1)
     {
       perror ("Unable to set network interface to promiscuous mode");
-      return 1;
-    }
-  if (ioctl (*sockfd, SIOCGIFINDEX, &ifr) < 0)
-    {
-      perror ("Unable to configure interface");
       return 1;
     }
   return 0;
