@@ -503,6 +503,13 @@ recv_rst (void *inputs)
       struct iphdr *ip = (struct iphdr *) buf;
 
       struct tcphdr *tcp = (struct tcphdr *) (buf + (ip->ihl * 4));
+      if (tcp->dest == args->sout->sin_port)
+        {
+          printf ("Port found!!\n");
+          char addr0[INET_ADDRSTRLEN];
+          inet_ntop (AF_INET, &ip->saddr, addr0, INET_ADDRSTRLEN);
+          printf ("Source addr for port found is %s\n", addr0);
+        }
       if (ip->saddr == args->sin->sin_addr.s_addr)
         {
           printf ("IHL of ip header %d\n", ip->ihl);
