@@ -44,7 +44,7 @@ struct rst_listener_args {
     int *sockfd;
     CONFIG config;
     struct sockaddr_in *sin;
-    struct sockaddr_in *sout;
+    struct sockaddr_in *head_sockaddr_in;
 };
 
 int start_rst_listener (pthread_t *rst_listenter_thread, struct rst_listener_args *args);
@@ -418,12 +418,19 @@ compdetect_single (CONFIG config)
   sin.sin_port = htons (config->tcp_src_syn_port);
   sin.sin_family = AF_INET;
 
-  struct sockaddr_in sout;
-  memset (&sout, 0, sizeof (sout));
+  struct sockaddr_in head_sockaddr_in;
+  memset (&head_sockaddr_in, 0, sizeof (head_sockaddr_in));
   // TODO update to use inet_pton or check if inet_addr == -1
-  sout.sin_addr.s_addr = inet_addr (config->server_ip);
-  sout.sin_port = htons (config->tcp_dest_head_syn_port);
-  sout.sin_family = AF_INET;
+  head_sockaddr_in.sin_addr.s_addr = inet_addr (config->server_ip);
+  head_sockaddr_in.sin_port = htons (config->tcp_dest_head_syn_port);
+  head_sockaddr_in.sin_family = AF_INET;
+
+  struct sockaddr_in tail_sockaddr_in;
+  memset (&tail_sockaddr_in, 0, sizeof (tail_sockaddr_in));
+  // TODO update to use inet_pton or check if inet_addr == -1
+  tail_sockaddr_in.sin_addr.s_addr = inet_addr (config->server_ip);
+  tail_sockaddr_in.sin_port = htons (config->tcp_dest_tail_syn_port);
+  tail_sockaddr_in.sin_family = AF_INET;
 
   int sockfd = -1;
 
@@ -455,7 +462,7 @@ compdetect_single (CONFIG config)
   args->sockfd = &sockfd;
   args->count = &count;
   args->sin = &sin;
-  args->sout = &sout;
+  args->head_sockaddr_in = &head_sockaddr_in;
   if (start_rst_listener (&rst_listener_thread, args))
     {
       perror("Failed to set up thread for receiving RST packets");
@@ -465,13 +472,38 @@ compdetect_single (CONFIG config)
     }
 
   printf ("raw_packet_size: %d\n", config->raw_packet_size);
-  if (send_head_tcp_syn (config, sockfd, &sin, &sout))
+  if (send_head_tcp_syn (config, sockfd, &sin, &head_sockaddr_in))
     {
       perror ("Failed to send_head_tcp_syn packet");
       free (args);
       free (recv_times);
       return 1;
     }
+  sleep(1);
+  if (send_head_tcp_syn (config, sockfd, &sin, &tail_sockaddr_in))
+    {
+      perror ("Failed to send_head_tcp_syn packet");
+      free (args);
+      free (recv_times);
+      return 1;
+    }
+  sleep(4);
+  if (send_head_tcp_syn (config, sockfd, &sin, &head_sockaddr_in))
+    {
+      perror ("Failed to send_head_tcp_syn packet");
+      free (args);
+      free (recv_times);
+      return 1;
+    }
+  sleep(1);
+  if (send_head_tcp_syn (config, sockfd, &sin, &tail_sockaddr_in))
+    {
+      perror ("Failed to send_head_tcp_syn packet");
+      free (args);
+      free (recv_times);
+      return 1;
+    }
+
   sleep (3);
   printf ("Trying to join thread\n");
   pthread_join(rst_listener_thread, NULL);
@@ -488,13 +520,9 @@ recv_rst (void *inputs)
   struct rst_listener_args *args = (struct rst_listener_args*) inputs;
   char buf[args->config->raw_packet_size];
   ssize_t received;
-  printf ("Started RST listener\n");
-  printf ("args count = %d\n", *args->count);
-  printf ("config source IIP = %s\n", args->config->client_ip);
-  printf ("bar\n");
-  printf ("sin addr %d\n", args->sin->sin_addr.s_addr);
   uint16_t tcp_dest_head_syn_port = htons (args->config->tcp_dest_head_syn_port);
-  while (*args->count < RST_PACKET_TOTAL - 1)
+  uint16_t tcp_dest_tail_syn_port = htons (args->config->tcp_dest_tail_syn_port);
+  while (*args->count < RST_PACKET_TOTAL)
     {
       received = recvfrom (*args->sockfd, buf, args->config->raw_packet_size, 0, NULL, NULL);
       if (received == 0)
@@ -502,25 +530,27 @@ recv_rst (void *inputs)
       else if (received < 0)
         continue;
       struct iphdr *ip = (struct iphdr *) buf;
-
       struct tcphdr *tcp = (struct tcphdr *) (buf + (ip->ihl * 4));
       if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_head_syn_port && tcp->rst)
         {
-          printf ("RST found!!\n");
+          printf ("Head found!!\n");
           char addr0[INET_ADDRSTRLEN];
           inet_ntop (AF_INET, &ip->saddr, addr0, INET_ADDRSTRLEN);
           printf ("Source addr for port found is %s\n", addr0);
           struct timeb recv_time;
           ftime(&recv_time);
           *(args->recv_times + *args->count) = recv_time;
-          for (int i=0; i<4; i++)
-            {
-              struct timeb current_time = *(args->recv_times + i);
-              if (current_time.millitm != 0)
-                printf ("Index %d is mili at %d\n", i, current_time.millitm);
-              else
-                printf ("Index %d has no data\n", i);
-            }
+          *args->count += 1;
+        }
+      else if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_tail_syn_port && tcp->rst)
+        {
+          printf ("received tail\n");
+          char addr0[INET_ADDRSTRLEN];
+          inet_ntop (AF_INET, &ip->saddr, addr0, INET_ADDRSTRLEN);
+          printf ("Source addr for port found is %s\n", addr0);
+          struct timeb recv_time;
+          ftime(&recv_time);
+          *(args->recv_times + *args->count) = recv_time;
           *args->count += 1;
         }
       if (ip->saddr == args->sin->sin_addr.s_addr)
@@ -529,13 +559,21 @@ recv_rst (void *inputs)
           char saddr[INET_ADDRSTRLEN];
           inet_ntop (AF_INET, &ip->saddr, saddr, INET_ADDRSTRLEN);
           printf ("Source IP %d %s in packet for count %d\n", ip->saddr, saddr, *args->count);
-
           *args->count += 1;
         }
     }
+  for (int i=0; i<4; i++)
+    {
+      struct timeb current_time = *(args->recv_times + i);
+      if (current_time.millitm != 0)
+        printf ("Index %d is mili at %d\n", i, current_time.millitm);
+      else
+        printf ("Index %d has no data\n", i);
+    }
+  printf("\n");
   char addr[INET_ADDRSTRLEN];
-  inet_ntop (AF_INET, &args->sout->sin_addr.s_addr, addr, INET_ADDRSTRLEN);
-  printf ("Server ip from sout %s\n", addr);
+  inet_ntop (AF_INET, &args->head_sockaddr_in->sin_addr.s_addr, addr, INET_ADDRSTRLEN);
+  printf ("Server ip from head_sockaddr_in %s\n", addr);
 }
 
 int
@@ -562,7 +600,7 @@ send_head_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct so
       return 1;
     }
 
-  printf ("sout addr %d\n", sout->sin_addr.s_addr);
+  printf ("head_sockaddr_in addr %d\n", sout->sin_addr.s_addr);
 
   if (new_syn_packet (sin, sout, packet, config->raw_packet_size, 1))
     {
