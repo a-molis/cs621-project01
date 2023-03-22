@@ -458,6 +458,7 @@ compdetect_single (CONFIG config)
       free (recv_times);
       return 1;
     }
+  sleep (2);
   printf ("raw_packet_size: %d\n", config->raw_packet_size);
   if (send_head_tcp_syn (config, sockfd, &sin, &sout))
     {
@@ -486,7 +487,7 @@ recv_rst (void *inputs)
   printf ("args count = %d\n", *args->count);
   printf ("config source IIP = %s\n", args->config->client_ip);
   printf ("bar\n");
-  printf ("sin addr %d", args->sin->sin_addr.s_addr);
+  printf ("sin addr %d\n", args->sin->sin_addr.s_addr);
 //  while (*args->count < RST_PACKET_TOTAL - 1)
   while (*args->count < 3)
     {
@@ -539,7 +540,7 @@ send_head_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct so
 
   printf ("sout addr %d\n", sout->sin_addr.s_addr);
 
-  if (new_syn_packet (sin, &sout, packet, config->raw_packet_size, 1))
+  if (new_syn_packet (sin, sout, packet, config->raw_packet_size, 1))
     {
       perror ("Error creating syn packet");
       free (packet);
