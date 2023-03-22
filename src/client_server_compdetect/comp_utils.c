@@ -591,7 +591,7 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
   ip->tos = 0;
   ip->ttl = 32;
   ip->tot_len = sizeof (struct tcphdr) + sizeof (struct iphdr);
-  ip->id = htons (id);
+  ip->id = htonl (rand() % 65535);
   ip->frag_off = 0;
   ip->check = 0;
   ip->protocol = IPPROTO_TCP;
@@ -601,7 +601,7 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
 
   tcp->source = sin->sin_port;
   tcp->dest = sout->sin_port;
-  tcp->seq = htonl(rand() % 4294967295);
+  tcp->seq = htonl(55);
   tcp->ack_seq = htonl (0);
   tcp->syn = 1;
   tcp->cwr = 0;
@@ -610,7 +610,6 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
   tcp->psh = 0;
   tcp->rst = 0;
   tcp->fin = 0;
-
   tcp->window = htons (64240);
   tcp->doff = 5;
 
