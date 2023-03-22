@@ -591,7 +591,7 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
   ip->tos = 0;
   ip->ttl = 32;
   ip->tot_len = sizeof (struct tcphdr) + sizeof (struct iphdr);
-  ip->id = htonl (rand() % 65535);
+  ip->id = htonl (id);
   ip->frag_off = 0;
   ip->check = 0;
   ip->protocol = IPPROTO_TCP;
