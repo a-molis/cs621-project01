@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <linux/tcp.h>
 #include <linux/ip.h>
+#include <pthread.h>
 #include "comp_utils.h"
 #include "config.h"
 #include "constants.h"
@@ -20,9 +21,13 @@
 // TODO test with running client first for all steps
 int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf);
 int get_high_entropy_data (CONFIG p_data, char data[]);
-int send_head_tcp_syn (CONFIG config);
+
+// TODO move to raw_comp file
+int send_head_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockaddr_in *sout);
 int new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet, int packet_len, int id);
 
+int send_syn_packet (int sockfd, struct sockaddr_in *sin, char *packet);
+int create_raw_socket (int *sockfd);
 /**
  * This is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
  * @param buf The buffer to create the checksum2 with
@@ -31,8 +36,16 @@ int new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *pac
  */
 unsigned short checksum2(const char *buf, unsigned size);
 
-int send_syn_packet (struct sockaddr_in *sin, char *packet);
+struct rst_listener_args {
+    int *count;
+    struct timeb *recv_times;
+    int *sockfd;
+    CONFIG config;
+    struct sockaddr_in *sin;
+    struct sockaddr_in *sout;
+};
 
+int start_rst_listener (pthread_t *rst_listenter_thread, struct rst_listener_args *args);
 int
 client_pre_probe (CONFIG config, char *config_str)
 {
@@ -390,28 +403,12 @@ client_post_probe (CONFIG config)
   return 0;
 }
 
+
+
+
 int
 compdetect_single (CONFIG config)
 {
-  printf ("raw_packet_size: %d\n", config->raw_packet_size);
-  if (send_head_tcp_syn (config))
-    {
-      perror ("Failed to send_head_tcp_syn packet");
-      return 1;
-    }
-
-  return 0;
-}
-
-int
-send_head_tcp_syn (CONFIG config)
-{
-  char *packet = malloc (sizeof (char) * config->raw_packet_size);
-  if (packet == NULL)
-    {
-      perror ("Error allocating packet with malloc");
-      return 1;
-    }
   struct sockaddr_in sin;
   memset (&sin, 0, sizeof (sin));
   // TODO update to use inet_pton or check if inet_addr == -1
@@ -426,13 +423,129 @@ send_head_tcp_syn (CONFIG config)
   sout.sin_port = htons (config->tcp_dest_head_syn_port);
   sout.sin_family = AF_INET;
 
-  if (new_syn_packet (&sin, &sout, packet, config->raw_packet_size, 1))
+  int sockfd = -1;
+  if ( create_raw_socket (&sockfd))
+    {
+      perror ("Unable to create raw socket");
+      return 1;
+    }
+  pthread_t rst_listener_thread;
+  int count = 0;
+
+  struct rst_listener_args *args = malloc (sizeof (struct rst_listener_args));
+  if (args == NULL)
+    {
+      perror ("Unable to malloc rst listener args");
+      return 1;
+    }
+  struct timeb *recv_times = malloc (sizeof (struct timeb) * RST_PACKET_TOTAL);
+  if (recv_times == NULL)
+    {
+      perror ("Unable to create recv_times array");
+      free (args);
+      return 1;
+    }
+  args->config = config;
+  args->recv_times = recv_times;
+  args->sockfd = &sockfd;
+  args->count = &count;
+  args->sin = &sin;
+  args->sout = &sout;
+  if (start_rst_listener (&rst_listener_thread, args))
+    {
+      perror("Failed to set up thread for receiving RST packets");
+      free (args);
+      free (recv_times);
+      return 1;
+    }
+  printf ("raw_packet_size: %d\n", config->raw_packet_size);
+  if (send_head_tcp_syn (config, sockfd, &sin, &sout))
+    {
+      perror ("Failed to send_head_tcp_syn packet");
+      free (args);
+      free (recv_times);
+      return 1;
+    }
+  sleep (3);
+  printf ("Trying to join thread\n");
+  pthread_join(rst_listener_thread, NULL);
+  printf ("joined thread\n");
+  free (args);
+  free (recv_times);
+  return 0;
+}
+
+
+void
+recv_rst (void *inputs)
+{
+  struct rst_listener_args *args = (struct rst_listener_args*) inputs;
+  char buf[args->config->raw_packet_size];
+  ssize_t received;
+  printf ("Started RST listener\n");
+  printf ("args count = %d\n", *args->count);
+  printf ("config source IIP = %s\n", args->config->client_ip);
+  printf ("bar\n");
+  printf ("sin addr %d", args->sin->sin_addr.s_addr);
+//  while (*args->count < RST_PACKET_TOTAL - 1)
+  while (*args->count < 3)
+    {
+      received = recvfrom (*args->sockfd, buf, args->config->raw_packet_size, 0, NULL, NULL);
+      if (received == 0)
+        break;
+      else if (received < 0)
+        continue;
+      struct iphdr *ip = (struct iphdr *) buf;
+
+      struct tcphdr *tcp = (struct tcphdr *) (buf + (ip->ihl * 4));
+      if (ip->saddr == args->sin->sin_addr.s_addr)
+        {
+          printf ("IHL of ip header %d\n", ip->ihl);
+          char saddr[INET_ADDRSTRLEN];
+          inet_ntop (AF_INET, &ip->saddr, saddr, INET_ADDRSTRLEN);
+          printf ("Source IP %d %s in packet for count %d\n", ip->saddr, saddr, *args->count);
+
+          *args->count += 1;
+        }
+    }
+  char addr[INET_ADDRSTRLEN];
+  inet_ntop (AF_INET, &args->sout->sin_addr.s_addr, addr, INET_ADDRSTRLEN);
+  printf ("Server ip from sout %s\n", addr);
+}
+
+int
+start_rst_listener (pthread_t *rst_listener_thread, struct rst_listener_args *args)
+{
+  printf ("Starting listener\n");
+
+  if (pthread_create (rst_listener_thread, NULL, (void *) &recv_rst, (void *) args))
+    {
+      perror ("Error creating RST recv thread");
+      return 1;
+    }
+
+  return 0;
+}
+
+int
+send_head_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockaddr_in *sout)
+{
+  char *packet = malloc (sizeof (char) * config->raw_packet_size);
+  if (packet == NULL)
+    {
+      perror ("Error allocating packet with malloc");
+      return 1;
+    }
+
+  printf ("sout addr %d\n", sout->sin_addr.s_addr);
+
+  if (new_syn_packet (sin, &sout, packet, config->raw_packet_size, 1))
     {
       perror ("Error creating syn packet");
       free (packet);
       return 1;
     }
-  if (send_syn_packet (&sin, packet))
+  if (send_syn_packet (sockfd, sin, packet))
     {
       perror ("Error sending raw packet for head syn packet");
       free (packet);
@@ -527,21 +640,8 @@ checksum2(const char *buf, unsigned size)
 }
 
 int
-send_syn_packet (struct sockaddr_in *sin, char *packet)
+send_syn_packet (int sockfd, struct sockaddr_in *sin, char *packet)
 {
-  int sockfd = socket (AF_INET, SOCK_RAW, IPPROTO_TCP);
-  if (sockfd < 0)
-    {
-      perror ("Failed to open raw socket");
-      return 1;
-    }
-  int one = 1;
-  const int *val = &one;
-  if (setsockopt (sockfd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
-    {
-      perror ("Failed to set socket opt for raw socket");
-      return 1;
-    }
   struct iphdr *ip = (struct iphdr *) packet;
   int sent  = sendto (sockfd, packet, ip->tot_len, 0, (struct sockaddr *) sin, sizeof (*sin));
   if (sent < 0)
@@ -550,5 +650,24 @@ send_syn_packet (struct sockaddr_in *sin, char *packet)
       return 1;
     }
   printf ("Sent raw socket %d \n", sent);
+  return 0;
+}
+
+int
+create_raw_socket (int *sockfd)
+{
+  *sockfd = socket (AF_INET, SOCK_RAW, IPPROTO_TCP);
+  if (*sockfd < 0)
+    {
+      perror ("Failed to open raw socket");
+      return 1;
+    }
+  int one = 1;
+  const int *val = &one;
+  if (setsockopt (*sockfd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
+    {
+      perror ("Failed to set socket opt for raw socket");
+      return 1;
+    }
   return 0;
 }
