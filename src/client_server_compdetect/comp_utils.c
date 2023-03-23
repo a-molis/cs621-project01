@@ -48,6 +48,16 @@ struct rst_listener_args {
 };
 
 int start_rst_listener (pthread_t *rst_listenter_thread, struct rst_listener_args *args);
+void print_results (struct timeb *recv_times, const int rst_count);
+
+/**
+ * Computes the time between two struct timeb
+ * @param time_1 start time
+ * @param time_2 end time
+ * @return The time diff
+ */
+double compute_time_diff (struct timeb time_1, struct timeb time_2);
+
 int
 client_pre_probe (CONFIG config, char *config_str)
 {
@@ -575,7 +585,10 @@ recv_rst (void *inputs)
           printf ("Source addr for port found is %s\n", addr0);
           struct timeb recv_time;
           ftime(&recv_time);
-          *(args->recv_times + *args->count) = recv_time;
+          if (*args->count > 1)
+            *(args->recv_times + 2) = recv_time;
+          else
+            *(args->recv_times + 0) = recv_time;
           *args->count += 1;
         }
       else if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_tail_syn_port && tcp->rst)
@@ -586,22 +599,44 @@ recv_rst (void *inputs)
           printf ("Source addr for port found is %s\n", addr0);
           struct timeb recv_time;
           ftime(&recv_time);
-          *(args->recv_times + *args->count) = recv_time;
+          if (*args->count > 1)
+            *(args->recv_times + 3) = recv_time;
+          else
+            *(args->recv_times + 1) = recv_time;
           *args->count += 1;
         }
     }
-  for (int i=0; i<4; i++)
-    {
-      struct timeb current_time = *(args->recv_times + i);
-      if (current_time.millitm != 0)
-        printf ("Index %d is mili at %d\n", i, current_time.millitm);
-      else
-        printf ("Index %d has no data\n", i);
-    }
+  print_results (args->recv_times, RST_PACKET_TOTAL);
   printf("\n");
   char addr[INET_ADDRSTRLEN];
   inet_ntop (AF_INET, &args->head_sockaddr_in->sin_addr.s_addr, addr, INET_ADDRSTRLEN);
   printf ("Server ip from head_sockaddr_in %s\n", addr);
+}
+
+void
+print_results (struct timeb *recv_times, const int rst_count)
+{
+  printf ("results:  \n");
+  for (int i = 0; i < rst_count; i++)
+    {
+      struct timeb current_time = *(recv_times + i);
+      if (current_time.millitm == 0)
+        printf ("Failed to detect due to insufficient information\n");
+    }
+  double low_entropy_duration = compute_time_diff(*recv_times, *(recv_times + 1));
+  double high_entropy_duration = compute_time_diff(*(recv_times + 2), *(recv_times + 3));
+  printf("Time between low entropy packets %.f mss and between high entropy packets %.f mss\n",
+         low_entropy_duration, high_entropy_duration);
+  printf ("Compression detected on link: ");
+  if (high_entropy_duration - low_entropy_duration > THRESHOLD)
+    printf ("True\n");
+  else
+    printf("False\n");
+}
+
+double compute_time_diff (struct timeb time_1, struct timeb time_2)
+{
+  return (1000 * difftime(time_2.time, time_1.time)) + time_2.millitm - time_1.millitm;
 }
 
 int
