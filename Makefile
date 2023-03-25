@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS += -g -std=c99 -Wall -I include -include include/config.h -include include/udp_sock_handler.h -I ext/cJSON
+CFLAGS += -g -std=c99 -Wall -I include -include include/config.h -include include/udp_sock_handler.h -I ext/cJSON -pthread
 
 test_dir=test
 src=src
