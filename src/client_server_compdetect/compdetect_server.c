@@ -11,7 +11,7 @@
 
 int run_server (int port);
 
-
+// TODO Add error hanling to all functions
 int main(int argc, char *argv[])
 {
   char *server_port = argv[1];

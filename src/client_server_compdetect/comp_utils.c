@@ -570,7 +570,7 @@ recv_rst (void *inputs)
   uint16_t tcp_dest_tail_syn_port = htons (args->config->tcp_dest_tail_syn_port);
   while (*args->count < RST_PACKET_TOTAL)
     {
-      // TODO add threshold to account for lost packet
+      // TODO add threshold/timeout to account for lost packet
       received = recvfrom (*args->sockfd, buf, args->config->raw_packet_size, 0, NULL, NULL);
       if (received == 0)
         break;
