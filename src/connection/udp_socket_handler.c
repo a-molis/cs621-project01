@@ -129,15 +129,13 @@ UDP_CLIENT_CONN udp_new_client(char *ip_address, unsigned short port)
   return client;
 }
 
-// TODO pull this logic out to common function between TCP and UDP
 int udp_client_connect(UDP_CLIENT_CONN client)
 {
-  // TODO check if new error handling needed
   int sock;
   if ((sock = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
     {
-      perror ("couldn’t create UDP socket");
-      abort ();
+      perror ("Couldn’t create UDP socket");
+      return 1;
     }
   printf ("set up client socket\n");
   // TODO verify DF bit set correctly with tcpdump
@@ -146,10 +144,15 @@ int udp_client_connect(UDP_CLIENT_CONN client)
                   sizeof (optval)) < 0)
     {
       perror ("Failed to set socket option for DF bit");
-      abort ();
+      return 1;
     }
 
   struct sockaddr_in *sin = malloc (sizeof (struct sockaddr_in));
+  if (sin == NULL)
+    {
+      perror ("Error setting up client sockaddr_in");
+      return 1;
+    }
   memset (sin, 0, sizeof (*sin));
   // TODO update to use inet_pton or check if -1
   sin->sin_addr.s_addr = inet_addr(client->ip_address);
@@ -161,7 +164,6 @@ int udp_client_connect(UDP_CLIENT_CONN client)
   client->handler->addr_len = sizeof (*sin);
 
   client->handler->sockfd = sock;
-  printf("Created new upd handler in client\n");
   return 0;
 }
 

@@ -8,7 +8,7 @@
 #include "config.h"
 #include "comp_utils.h"
 
-void comp_client_run (char *config_path);
+int comp_client_run (char *config_path);
 
 int main(int argc, char *argv[])
 {
@@ -16,17 +16,25 @@ int main(int argc, char *argv[])
   if (!config_path)
     {
       printf ("Missing required arg config\n");
-      exit (1);
+      abort ();
     }
-  comp_client_run (config_path);
+  if (comp_client_run (config_path))
+    {
+      printf ("Error running client\n");
+      abort ();
+    }
   return 0;
 }
 
-void comp_client_run (char *config_path)
+int comp_client_run (char *config_path)
 {
   char buf[MAX_TCP_SIZE];
   CONFIG config = get_config (config_path, buf);
-  printf ("config server ip %s\n", config->server_ip);
+  if (config == NULL)
+    {
+      perror ("Error getting config for client");
+      return 1;
+    }
 
   int pre_probe = client_pre_probe (config, buf);
   if (pre_probe)
@@ -34,8 +42,7 @@ void comp_client_run (char *config_path)
       perror ("Client failed to pre probe server");
       abort ();
     }
-  int probe = client_probe(config);
-  if (probe)
+  if (client_probe(config))
     {
       perror ("Client failed to probe server");
       abort ();
@@ -48,4 +55,5 @@ void comp_client_run (char *config_path)
       abort ();
     }
   config_destroy(config);
+  return 0;
 }
