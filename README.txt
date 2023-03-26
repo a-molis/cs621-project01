@@ -8,5 +8,7 @@ The config file has the following field's
 client_ip
 raw_packet_size
 
+// TODO update README wtih all info
+
 
 This was tested on vm slices made by USFCA CS support. The VMs are running AlmaLinux 9.1 (Lime Lynx) x86_64.

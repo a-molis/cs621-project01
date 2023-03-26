@@ -58,6 +58,8 @@ int main() {
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
   server_args->port =  "12062";
+  
+  // TODO update tests to use test_config.json
   server_args->config_path = "myconfig.json";
   server_args->tcp_dest_tail_syn_port = 12061;
   int server_status = 1;

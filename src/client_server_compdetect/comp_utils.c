@@ -223,10 +223,11 @@ int server_probe (CONFIG config, char *result)
     }
   printf("Server set up new UDP connection with client probe\n");
 
+  // TODO use timeout from config
   signal (SIGALRM, signal_handler);
   alarm (UPP_TIMEOUT);
-
-  if (recv_udp_train (client_handler, config, low, result))
+  double low_entropy_duration;
+  if (recv_udp_train (client_handler, config, low, result, &low_entropy_duration))
     {
       perror ("Client failed to send low entropy data");
       return 1;
@@ -241,7 +242,8 @@ int server_probe (CONFIG config, char *result)
     }
   signal (SIGALRM, signal_handler);
   alarm (20);
-  if (recv_udp_train (client_handler, config, high, result + len))
+  double high_entropy_duration;
+  if (recv_udp_train (client_handler, config, high, result + len, &high_entropy_duration))
     {
       perror ("Client failed to send high entropy data");
       return 1;
@@ -256,6 +258,13 @@ int server_probe (CONFIG config, char *result)
       perror("Failed to destroy udp client handler in server probe stage");
       return 1;
     }
+  len = strlen (result);
+  sprintf (result + len, "Compression detected: ");
+  len = strlen (result);
+  if (high_entropy_duration - low_entropy_duration > THRESHOLD)
+    sprintf (result + len, "True\n");
+  else
+    sprintf (result + len, "False\n");
   alarm (0);
   return 0;
 }
@@ -294,7 +303,7 @@ int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t
   return 0;
 }
 
-int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t, char result[])
+int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t, char result[], double *mss)
 {
   printf ("Server starting low entropy receive\n");
   char buf[config->udp_payload_size];
@@ -349,15 +358,16 @@ int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t
     {
       printf ("start time %d\n", start);
       printf ("end time %d\n", end);
-      double ms = (1000 * difftime(recv_times[end].time, recv_times[start].time)) +
+      *mss = (1000 * difftime(recv_times[end].time, recv_times[start].time)) +
         recv_times[end].millitm -  recv_times[start].millitm;
-      sprintf (result, "It took %.f ms between packet between packets %d and %d for %s entropy data\n", ms, start, end, train_type_str[t]);
+      sprintf (result, "It took %.f ms between packet between packets %d and %d for %s entropy data\n", *mss, start, end, train_type_str[t]);
       printf (result);
     }
   else
     {
       printf ("could not get start or end time for %s entropy data\n", train_type_str[t]);
       sprintf (result, "Error getting %s entropy data\n", train_type_str[t]);
+      *mss = -1;
       return 1;
     }
   printf ("Sent %s entropy data received from client with %d success %d failed\n", train_type_str[t], sent_success, sent_failed);
@@ -751,6 +761,8 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
   return 0;
 }
 
+// TODO verify checksum in wireshark
+// TODO change from checksum2 to checksum
 // This function is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
 unsigned short
 checksum2(const char *buf, unsigned size)
