@@ -5,6 +5,8 @@
 
 int run_compdetect (char *config_path);
 
+// TODO make sure all errors handled
+// TODO error check if not run with sudo
 
 int main(int argc, char *argv[])
 {
@@ -27,7 +29,11 @@ int run_compdetect (char *config_path)
   printf ("config path %s\n", config_path);
   char buf[MAX_TCP_SIZE];
   CONFIG config = get_config (config_path, buf);
-
+  if (config == NULL)
+    {
+      perror ("Unable to get config");
+      return 1;
+    }
   if (compdetect_single (config))
     {
       perror ("Error running compdetect_single");

@@ -5,24 +5,28 @@
 #include "constants.h"
 #include "cJSON.h"
 
-void parse_optional_params (CONFIG config, const cJSON *json);
-void parse_required_params (CONFIG config, const cJSON *json);
+int parse_optional_params (CONFIG config, const cJSON *json);
+int parse_required_params (CONFIG config, const cJSON *json);
 
 CONFIG config_new (char *config_str)
 {
-  printf ("starting config\n");
   CONFIG config = malloc (sizeof (struct CONFIG_DATA));
-  if (!config)
+  if (config == NULL)
     {
       perror ("Unable to malloc new config struct");
-      abort ();
+      return NULL;
     }
   cJSON *json = cJSON_ParseWithLength (config_str, strlen (config_str));
-  parse_required_params (config, json);
-  if (!config)
+  if (json == NULL)
     {
-      perror ("Unable to create config");
-      abort ();
+      perror ("Error parsing config");
+      free (config);
+      return NULL;
+    }
+  if (parse_required_params (config, json))
+    {
+      perror ("Error parsing required params");
+      return NULL;
     }
   parse_optional_params (config, json);
   return config;
@@ -34,7 +38,7 @@ void config_destroy (CONFIG config)
     free (config);
 }
 
-void parse_required_params (CONFIG config, const cJSON *json)
+int parse_required_params (CONFIG config, const cJSON *json)
 {
   // Required config parameters
   cJSON *server_ip = cJSON_GetObjectItem (json, "server_ip");
@@ -50,7 +54,7 @@ void parse_required_params (CONFIG config, const cJSON *json)
     {
       free (config);
       perror ("Missing required config parameter");
-      abort ();
+      return 1;
     }
   // TODO add error check if value string present and that atoi works
   strcpy (config->server_ip, server_ip->valuestring);
@@ -60,9 +64,10 @@ void parse_required_params (CONFIG config, const cJSON *json)
   config->tcp_dest_tail_syn_port = tcp_dest_tail_syn_port->valueint;
   config->tcp_probing_port = tcp_probing_port->valueint;
   strcpy (config->client_ip, client_ip->valuestring);
+  return 0;
 }
 
-void parse_optional_params (CONFIG config, const cJSON *json)
+int parse_optional_params (CONFIG config, const cJSON *json)
 {
   // Optional config parameters
   cJSON *udp_payload_size = cJSON_GetObjectItem (json, "udp_payload_size");
@@ -101,6 +106,7 @@ void parse_optional_params (CONFIG config, const cJSON *json)
     config->tcp_src_syn_port = TCP_SRC_SYN_PORT;
   else
     config->tcp_src_syn_port = tcp_src_syn_port->valueint;
+  return 0;
 }
 
 CONFIG get_config (char *config_path, char *buf)
@@ -108,12 +114,10 @@ CONFIG get_config (char *config_path, char *buf)
   int opened = open_file(config_path, buf);
   if (opened)
     {
-      printf ("Failed to open config file\n");
-      exit (1);
+      perror ("Failed to open config file");
+      return NULL;
     }
-  // TODO send config to server
-  CONFIG config = config_new(buf);
-  return config;
+  return config_new(buf);
 }
 
 int open_file (char *path, char *buf)
@@ -124,6 +128,7 @@ int open_file (char *path, char *buf)
       printf("Failed to open file %s\n", path);
       return 1;
     }
+  // TODO move to constants
   int size = 1024;
   size_t offset = 0;
   while (fgets(buf + offset, size, fd) != NULL)
@@ -135,6 +140,5 @@ int open_file (char *path, char *buf)
       perror ("Unable to close file");
       abort ();
     }
-  printf("\n %s\n", buf);
   return 0;
 }
