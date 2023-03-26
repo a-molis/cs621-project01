@@ -24,32 +24,27 @@ void *run_server(void *inputs)
   unsigned short server_port = atoi (server_args->port);
   CONFIG config = server_pre_probe (server_port);
   printf ("config tcp_dest_tail_syn_port %d\n", server_args->tcp_dest_tail_syn_port);
-
-  printf("servver status in thread %d\n", *server_args->server_status);
-  printf("config->tcp_dest_tail_syn_port %d\n", config->tcp_dest_tail_syn_port);
-  printf("server_args->tcp_dest_tail_syn_port %d\n", server_args->tcp_dest_tail_syn_port);
-  printf("eq %d\n", config->tcp_dest_tail_syn_port == server_args->tcp_dest_tail_syn_port);
-  int status = !(config->tcp_dest_tail_syn_port == server_args->tcp_dest_tail_syn_port);
+  if (config == NULL)
+    {
+      printf ("Server failed in pre probe stage\n");
+      *server_args->server_status = 1;
+    }
 
   char result[config->udp_payload_size];
   bzero (result, config->udp_payload_size);
   int probe = server_probe (config, result);
   if (probe)
     {
-      perror ("Client failed to probe server");
-      abort ();
+      printf ("Server failed to probe server\n");
+      *server_args->server_status = 1;
     }
   printf ("Result from server results:\n%s\n", result);
   if (server_post_probe(config, result))
     {
-      perror ("Server failed to send post probe");
-      abort ();
+      printf ("Server failed to send post probe\n");
+      *server_args->server_status = 1;
     }
-   
-
-  *server_args->server_status = status;
   printf("server status %d\n", *server_args->server_status);
-  printf("status %d\n", status);
   config_destroy (config);
   return 0;
 }
@@ -64,11 +59,26 @@ void *run_client(void *inputs)
 
   int pre_probe = client_pre_probe (config, buf);
   if (pre_probe)
-    printf ("Client failed to pre probe server");
-  printf("client pre_probe %d\n", pre_probe);
-  *server_args->client_status = pre_probe;
+    {
+      printf ("Client failed to pre probe server");
+      *server_args->client_status = 1;
+    }
+  int probe = client_probe(config);
+  if (probe)
+    {
+      printf ("Client failed to probe server\n");
+      *server_args->client_status = 1;
+    }
+  // TODO update timing in client server
+  // TODO see if we can use thread for server at the end?
+  sleep (25);
+  int post_probe = client_post_probe (config);
+  if (post_probe)
+    {
+      printf ("Client error in post probe stage\n");
+      *server_args->client_status = 1;
+    }
   config_destroy(config);
-
   return 0;
 }
 
@@ -76,10 +86,10 @@ int main() {
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
   server_args->port =  "12062";
-  server_args->config_path = "myconfig.json";
+  server_args->config_path = "test/test_config.json";
   server_args->tcp_dest_tail_syn_port = 12061;
-  int server_status = 1;
-  int client_status = 1;
+  int server_status = 0;
+  int client_status = 0;
   server_args->server_status = &server_status;
   server_args->client_status = &client_status;
 

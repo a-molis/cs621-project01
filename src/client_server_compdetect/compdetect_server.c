@@ -39,7 +39,7 @@ int run_server (int port)
   if (config == NULL)
     {
       perror ("Server failed in pre probe step");
-      abort ();
+      return 1;
     }
   char result[config->udp_payload_size];
   bzero (result, config->udp_payload_size);
@@ -47,13 +47,13 @@ int run_server (int port)
   if (probe)
     {
       perror ("Client failed to probe server");
-      abort ();
+      return 1;
     }
   printf ("Result from server results:\n%s\n", result);
   if (server_post_probe(config, result))
     {
       perror ("Server failed to send post probe");
-      abort ();
+      return 1;
     }
   config_destroy(config);
   return 0;
