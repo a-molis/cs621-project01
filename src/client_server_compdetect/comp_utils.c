@@ -406,18 +406,22 @@ int
 client_post_probe (CONFIG config)
 {
   TCP_CLIENT_CONN client_conn = tcp_new_client (config->server_ip, config->tcp_probing_port);
+  if (client_conn == NULL)
+    {
+      perror ("Unable to create TCP_CLIENT_CONN in client post probe\n");
+      return 1;
+    }
   if (tcp_client_connect(client_conn))
     {
       perror ("Client Failed to connect to server in post probe");
-      abort ();
+      return 1;
     }
   int buf_len = 0;
   char buf[MAX_TCP_SIZE];
-  int received = tcp_recv (client_conn->handler, buf, &buf_len);
-  if (received)
+  if (tcp_recv (client_conn->handler, buf, &buf_len))
     {
       perror ("Client failed to get results from server in post probe");
-      abort ();
+      return 1;
     }
   buf[buf_len] = '\0';
   printf ("\nResults from server: \n%s", buf);

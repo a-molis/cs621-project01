@@ -11,10 +11,13 @@
 TCP_HANDLER new_tcp_handler(int sockfd) 
 {
   TCP_HANDLER handler = malloc(sizeof(struct TCP_SOCKET_HANDLER));
-  printf("sockfd at  new %d\n", sockfd);
+  if (handler == NULL)
+    {
+      perror ("Unable to allocate memory for TCP_HANDLER");
+      return NULL;
+    }
   handler->sockfd = sockfd;
-  printf("sockfd at assignment %d\n", handler->sockfd);
-  return handler; 
+  return handler;
 }
 
 int destroy_tcp_handler(TCP_HANDLER handler)
@@ -101,6 +104,11 @@ int destroy_tcp_sever(TCP_SERVER server)
 TCP_CLIENT_CONN tcp_new_client(char *host_ip, unsigned short port)
 {
   TCP_CLIENT_CONN client = malloc (sizeof (struct TCP_CLIENT_HANDLER));
+  if (client == NULL)
+    {
+      perror ("Unable to allocate memory for TCP_CLIENT_CONN");
+      return NULL;
+    }
   TCP_HANDLER handler = new_tcp_handler (0);
   client->server_port = port;
   client->host_ip = host_ip;
@@ -120,16 +128,12 @@ int tcp_client_connect(TCP_CLIENT_CONN client)
   sin.sin_addr.s_addr = inet_addr(client->host_ip);
   sin.sin_port = htons (server_port);
 
-  printf("Client connecting to server on ip_addr %s on server_port %d\n", client->host_ip, server_port);
   if (connect (sock, (struct sockaddr *) &sin, sizeof (sin))<0)
     {
       perror("cannot connect to server");
       return 1;
     }
-
-  printf("Client connected to server on ip_addr %s on server_port %d\n", client->host_ip, server_port);
   client->handler->sockfd = sock;
-  printf("Created new tcp handler in client\n");
   return 0;
 }
 
@@ -243,7 +247,6 @@ int tcp_recv(TCP_HANDLER handler, char *buf, int *output_len)
   else if (recv_len == 0)
     return EOF;
   *output_len = size;
-  printf("size %d\n", size);
   return 0;
 }
 

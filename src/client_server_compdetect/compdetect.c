@@ -7,6 +7,11 @@ int run_compdetect (char *config_path);
 
 // TODO make sure all errors handled
 // TODO error check if not run with sudo
+// TODO set TTL for udp packet train
+// TODO test with valgrind
+// TODO add timeout for standalone
+// TODO check rubric and project outline to verify all done
+// TODO remove all print statements
 
 int main(int argc, char *argv[])
 {
