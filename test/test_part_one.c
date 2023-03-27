@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <strings.h>
+#include <signal.h>
 #include "udp_sock_handler.h"
 #include "constants.h"
 #include "config.h"
@@ -95,6 +96,10 @@ int main() {
 
   pthread_create (&server_thread, NULL, (void *) &run_server, (void *) server_args);
   sleep (1);
+  sigset_t set;
+  sigemptyset (&set);
+  sigaddset (&set, SIGALRM);
+  pthread_sigmask (SIG_BLOCK, &set, NULL);
   pthread_create (&client_thread, NULL, (void *) &run_client, (void *) server_args);
   pthread_join(client_thread, NULL);
   pthread_join(server_thread, NULL);
