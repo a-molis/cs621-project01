@@ -11,5 +11,6 @@
   "inter_measure_time": 15,
   "udp_packet_train_len": 6000,
   "udp_packet_ttl": 255,
-  "raw_packet_size": 4096
+  "raw_packet_size": 4096,
+  "recv_device": "enp1s0"
 }

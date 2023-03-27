@@ -7,6 +7,7 @@ https://github.com/DaveGamble/cJSON
 The config file has the following field's
 client_ip
 raw_packet_size
+recv_device
 
 // TODO update README wtih all info
 

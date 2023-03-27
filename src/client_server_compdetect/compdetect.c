@@ -21,12 +21,12 @@ int main(int argc, char *argv[])
   if (!config_path)
     {
       printf ("Missing required arg config\n");
-      exit (1);
+      return 1;
     }
   if (run_compdetect (config_path))
     {
       perror ("Error with run_compdetect");
-      abort ();
+      return 1;
     }
   return 0;
 }
@@ -44,6 +44,7 @@ int run_compdetect (char *config_path)
   if (compdetect_single (config))
     {
       perror ("Error running compdetect_single");
+      config_destroy (config);
       return 1;
     }
   config_destroy (config);

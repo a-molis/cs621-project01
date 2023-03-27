@@ -149,13 +149,16 @@ int udp_client_connect(UDP_CLIENT_CONN client)
   if (setsockopt (sock, IPPROTO_IP, IP_MTU_DISCOVER, &optval,
                   sizeof (optval)) < 0)
     {
+      if (close (sock))
+        printf ("Failed to close socket");
       perror ("Failed to set socket option for DF bit");
       return 1;
     }
-
   struct sockaddr_in *sin = malloc (sizeof (struct sockaddr_in));
   if (sin == NULL)
     {
+      if (close (sock))
+        printf ("Failed to close socket");
       perror ("Error setting up client sockaddr_in");
       return 1;
     }

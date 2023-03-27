@@ -18,6 +18,7 @@ struct CONFIG_DATA
     int udp_packet_ttl;
     int raw_packet_size;
     int tcp_src_syn_port;
+    char recv_device[16];
 };
 
 typedef struct CONFIG_DATA *CONFIG;

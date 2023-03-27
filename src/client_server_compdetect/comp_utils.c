@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
 #include <linux/tcp.h>
 #include <linux/ip.h>
 #include <linux/if.h>
@@ -26,11 +27,11 @@ int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t
 int get_high_entropy_data (CONFIG p_data, char data[]);
 
 // TODO move to raw_comp file
-int send_head_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockaddr_in *sout);
+int send_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockaddr_in *sout);
 int new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet, int packet_len, int id);
 
 int send_syn_packet (int sockfd, struct sockaddr_in *sout, char *packet);
-int create_raw_socket (int *sockfd, char *interface);
+int create_raw_socket (int *sockfd, char *interface, CONFIG config);
 /**
  * This is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
  * @param buf The buffer to create the checksum2 with
@@ -48,7 +49,9 @@ struct rst_listener_args {
     struct sockaddr_in *head_sockaddr_in;
 };
 
-int start_rst_listener (pthread_t *rst_listenter_thread, struct rst_listener_args *args);
+int
+start_rst_listener (pthread_t *rst_listener_thread, struct rst_listener_args *args, CONFIG config, struct timeb *recv_times, int sockfd, struct
+  sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, int *count);
 void print_results (struct timeb *recv_times, const int rst_count);
 
 /**
@@ -63,6 +66,12 @@ int
 get_low_entropy_data (UDP_HANDLER client_handler, CONFIG config, enum train_type type, char *result, double *low_entropy_duration);
 int process_comp (char *result, double low_entropy_duration, double high_entropy_duration);
 int process_train (CONFIG config, struct timeb recv_times[], double *mss, char result[], enum train_type t);
+int
+send_single_train (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in, UDP_CLIENT_CONN udp_client);
+int
+setup_sockaddrs (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in);
+int
+setup_raw_socket_conns (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in, UDP_CLIENT_CONN *udp_client, int *sockfd);
 int
 client_pre_probe (CONFIG config, char *config_str)
 {
@@ -491,116 +500,159 @@ client_post_probe (CONFIG config)
   return 0;
 }
 
-
-
 int
 compdetect_single (CONFIG config)
 {
   printf("Starting client pre probe on ip %s on port %d\n", config->server_ip, config->udp_dest_port);
-  UDP_CLIENT_CONN udp_client = udp_new_client (config->server_ip, config->udp_dest_port);
-  if (udp_client == NULL)
+  struct sockaddr_in sin;
+  struct sockaddr_in head_sockaddr_in;
+  struct sockaddr_in tail_sockaddr_in;
+  UDP_CLIENT_CONN udp_client;
+  pthread_t rst_listener_thread;
+  struct rst_listener_args *args;
+  struct timeb *recv_times;
+  int sockfd = -1;
+  int count = 0;
+  if (setup_raw_socket_conns (config, &sin, &head_sockaddr_in, &tail_sockaddr_in, &udp_client, &sockfd))
+    {
+      perror ("Error setting up raw socket conns");
+      return 1;
+    }
+  if (start_rst_listener (&rst_listener_thread, args, config, recv_times, sockfd, &sin, &head_sockaddr_in, &count))
+    {
+      perror("Failed to set up thread for receiving RST packets");
+      if (udp_destroy_client (udp_client))
+        printf ("Failed to destroy client");
+//      close (sockfd);
+      free (args);
+      free (recv_times);
+      return 1;
+    }
+  if (send_single_train (config, sockfd, &sin, &head_sockaddr_in, &tail_sockaddr_in, udp_client))
+    {
+      perror ("Failed to send packet train for compdetect");
+      if (udp_destroy_client (udp_client))
+        printf ("Failed to destroy client");
+      free (args);
+//      close (sockfd);
+      free (recv_times);
+      return 1;
+    }
+  if (udp_destroy_client (udp_client))
+    {
+      perror("Failed to set up thread for receiving RST packets");
+      free (args);
+      free (recv_times);
+//      close (sockfd);
+      perror ("Failed to destroy upd client");
+      return 1;
+    }
+  printf ("Trying to join thread\n");
+  pthread_join(rst_listener_thread, NULL);
+  printf ("joined thread\n");
+  free (args);
+//  close (sockfd);
+  free (recv_times);
+  return 0;
+}
+
+int
+setup_raw_socket_conns (
+  CONFIG config,
+  struct sockaddr_in *sin,
+  struct sockaddr_in *head_sockaddr_in,
+  struct sockaddr_in *tail_sockaddr_in,
+  UDP_CLIENT_CONN *udp_client,
+  int *sockfd)
+{
+  *udp_client = udp_new_client (config->server_ip, config->udp_dest_port);
+  if ((*udp_client) == NULL)
     {
       perror ("Failed to create udp_client");
       return 1;
     }
   printf("Setting up client upd connection\n");
-  if (udp_client_connect (udp_client))
+  if (udp_client_connect ((*udp_client)))
     {
+      if (udp_destroy_client ((*udp_client)))
+        printf ("Failed to destroy client");
       perror ("Client failed to set up UDP connection with server in client probe stage\n");
       return 1;
     }
   printf("Client set up udp client upd connection\n");
 
-  // TODO close socket
-  struct sockaddr_in sin;
-  memset (&sin, 0, sizeof (sin));
-  // TODO update to use inet_pton or check if inet_addr == -1
-  sin.sin_addr.s_addr = inet_addr (config->client_ip);
-  sin.sin_port = htons (config->tcp_src_syn_port);
-  sin.sin_family = AF_INET;
-
-  struct sockaddr_in head_sockaddr_in;
-  memset (&head_sockaddr_in, 0, sizeof (head_sockaddr_in));
-  // TODO update to use inet_pton or check if inet_addr == -1
-  head_sockaddr_in.sin_addr.s_addr = inet_addr (config->server_ip);
-  head_sockaddr_in.sin_port = htons (config->tcp_dest_head_syn_port);
-  head_sockaddr_in.sin_family = AF_INET;
-
-  struct sockaddr_in tail_sockaddr_in;
-  memset (&tail_sockaddr_in, 0, sizeof (tail_sockaddr_in));
-  // TODO update to use inet_pton or check if inet_addr == -1
-  tail_sockaddr_in.sin_addr.s_addr = inet_addr (config->server_ip);
-  tail_sockaddr_in.sin_port = htons (config->tcp_dest_tail_syn_port);
-  tail_sockaddr_in.sin_family = AF_INET;
-
-  int sockfd = -1;
-
-  // TODO move device name to config file
-  char *device = "enp1s0";
-  if ( create_raw_socket (&sockfd, device))
+  if (setup_sockaddrs (config, sin, head_sockaddr_in, tail_sockaddr_in))
+    {
+      perror ("Failed to setup sockaddrs");
+      if (udp_destroy_client ((*udp_client)))
+        printf ("Failed to destroy client");
+      return 1;
+    }
+  char *device = config->recv_device;
+  if (create_raw_socket (sockfd, device, config))
     {
       perror ("Unable to create raw socket");
+      if (udp_destroy_client ((*udp_client)))
+        printf ("Failed to destroy client");
       return 1;
     }
-  pthread_t rst_listener_thread;
-  int count = 0;
+  return 0;
+}
 
-  struct rst_listener_args *args = malloc (sizeof (struct rst_listener_args));
-  if (args == NULL)
-    {
-      perror ("Unable to malloc rst listener args");
-      return 1;
-    }
-  struct timeb *recv_times = malloc (sizeof (struct timeb) * RST_PACKET_TOTAL);
-  if (recv_times == NULL)
-    {
-      perror ("Unable to create recv_times array");
-      free (args);
-      return 1;
-    }
-  args->config = config;
-  args->recv_times = recv_times;
-  args->sockfd = &sockfd;
-  args->count = &count;
-  args->sin = &sin;
-  args->head_sockaddr_in = &head_sockaddr_in;
-  if (start_rst_listener (&rst_listener_thread, args))
-    {
-      perror("Failed to set up thread for receiving RST packets");
-      free (args);
-      free (recv_times);
-      return 1;
-    }
+int
+setup_sockaddrs (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in)
+{
+  memset (sin, 0, sizeof ((*sin)));
+  // TODO update to use inet_pton or check if inet_addr == -1
+  sin->sin_addr.s_addr = inet_addr (config->client_ip);
+  sin->sin_port = htons (config->tcp_src_syn_port);
+  sin->sin_family = AF_INET;
 
+  memset (head_sockaddr_in, 0, sizeof ((*head_sockaddr_in)));
+  // TODO update to use inet_pton or check if inet_addr == -1
+  head_sockaddr_in->sin_addr.s_addr = inet_addr (config->server_ip);
+  head_sockaddr_in->sin_port = htons (config->tcp_dest_head_syn_port);
+  head_sockaddr_in->sin_family = AF_INET;
+
+  memset (tail_sockaddr_in, 0, sizeof ((*tail_sockaddr_in)));
+  // TODO update to use inet_pton or check if inet_addr == -1
+  tail_sockaddr_in->sin_addr.s_addr = inet_addr (config->server_ip);
+  tail_sockaddr_in->sin_port = htons (config->tcp_dest_tail_syn_port);
+  tail_sockaddr_in->sin_family = AF_INET;
+  return 0;
+}
+
+int
+send_single_train (
+  CONFIG config,
+  int sockfd,
+  struct sockaddr_in *sin,
+  struct sockaddr_in *head_sockaddr_in,
+  struct sockaddr_in *tail_sockaddr_in,
+  UDP_CLIENT_CONN udp_client)
+{
   printf ("raw_packet_size: %d\n", config->raw_packet_size);
-  if (send_head_tcp_syn (config, sockfd, &sin, &head_sockaddr_in))
+  if (send_tcp_syn (config, sockfd, sin, head_sockaddr_in))
     {
-      perror ("Failed to send_head_tcp_syn packet");
-      free (args);
-      free (recv_times);
+      perror ("Failed to send_tcp_syn packet");
       return 1;
     }
   char buf[config->udp_payload_size];
   bzero (buf, config->udp_payload_size);
-  int send_low = send_udp_train (udp_client, config, low, buf);
-  if (send_low)
+  if (send_udp_train (udp_client, config, low, buf))
     {
       perror ("Client failed to send low entropy data");
       return 1;
     }
-  if (send_head_tcp_syn (config, sockfd, &sin, &tail_sockaddr_in))
+  if (send_tcp_syn (config, sockfd, sin, tail_sockaddr_in))
     {
-      perror ("Failed to send_head_tcp_syn packet");
-      free (args);
-      free (recv_times);
+      perror ("Failed to send_tcp_syn packet");
       return 1;
     }
   sleep (config->inter_measure_time);
-  if (send_head_tcp_syn (config, sockfd, &sin, &head_sockaddr_in))
+  if (send_tcp_syn (config, sockfd, sin, head_sockaddr_in))
     {
-      perror ("Failed to send_head_tcp_syn packet");
-      free (args);
-      free (recv_times);
+      perror ("Failed to send_tcp_syn packet");
       return 1;
     }
   char high_data[config->udp_payload_size];
@@ -614,27 +666,13 @@ compdetect_single (CONFIG config)
       perror ("Client failed to send low entropy data");
       return 1;
     }
-  if (send_head_tcp_syn (config, sockfd, &sin, &tail_sockaddr_in))
+  if (send_tcp_syn (config, sockfd, sin, tail_sockaddr_in))
     {
-      perror ("Failed to send_head_tcp_syn packet");
-      free (args);
-      free (recv_times);
+      perror ("Failed to send_tcp_syn packet");
       return 1;
     }
-  if (udp_destroy_client (udp_client))
-    {
-      perror ("Failed to destroy upd client");
-      return 1;
-    }
-
-  printf ("Trying to join thread\n");
-  pthread_join(rst_listener_thread, NULL);
-  printf ("joined thread\n");
-  free (args);
-  free (recv_times);
   return 0;
 }
-
 
 void
 recv_rst (void *inputs)
@@ -644,22 +682,31 @@ recv_rst (void *inputs)
   ssize_t received;
   uint16_t tcp_dest_head_syn_port = htons (args->config->tcp_dest_head_syn_port);
   uint16_t tcp_dest_tail_syn_port = htons (args->config->tcp_dest_tail_syn_port);
+  printf ("count before loop %d\n", *args->count);
   while (*args->count < RST_PACKET_TOTAL)
     {
       // TODO add threshold/timeout to account for lost packet
       received = recvfrom (*args->sockfd, buf, args->config->raw_packet_size, 0, NULL, NULL);
       if (received == 0)
-        break;
+        {
+          printf ("connection closed\n");
+          break;
+        }
       else if (received < 0)
-        continue;
+        {
+//          printf ("Errno from invalid recv %d\n", errno);
+          continue;
+        }
+//      else if (received == EINTR)
+//        {
+//          printf ("received in thread is equal to EINTR \n");
+//        }
+
       struct iphdr *ip = (struct iphdr *) buf;
       struct tcphdr *tcp = (struct tcphdr *) (buf + (ip->ihl * 4));
       if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_head_syn_port && tcp->rst)
         {
-          printf ("Head found!!\n");
-          char addr0[INET_ADDRSTRLEN];
-          inet_ntop (AF_INET, &ip->saddr, addr0, INET_ADDRSTRLEN);
-          printf ("Source addr for port found is %s\n", addr0);
+          printf ("Received head!!\n");
           struct timeb recv_time;
           ftime(&recv_time);
           if (*args->count > 1)
@@ -667,13 +714,11 @@ recv_rst (void *inputs)
           else
             *(args->recv_times + 0) = recv_time;
           *args->count += 1;
+          printf ("Count inside loop head %d\n", *args->count);
         }
       else if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_tail_syn_port && tcp->rst)
         {
-          printf ("received tail\n");
-          char addr0[INET_ADDRSTRLEN];
-          inet_ntop (AF_INET, &ip->saddr, addr0, INET_ADDRSTRLEN);
-          printf ("Source addr for port found is %s\n", addr0);
+          printf ("Received tail!!\n");
           struct timeb recv_time;
           ftime(&recv_time);
           if (*args->count > 1)
@@ -681,8 +726,10 @@ recv_rst (void *inputs)
           else
             *(args->recv_times + 1) = recv_time;
           *args->count += 1;
+          printf ("Count inside loop tail %d\n", *args->count);
         }
     }
+  printf ("Count after loop %d\n", *args->count);
   print_results (args->recv_times, RST_PACKET_TOTAL);
   printf("\n");
   char addr[INET_ADDRSTRLEN];
@@ -694,12 +741,21 @@ void
 print_results (struct timeb *recv_times, const int rst_count)
 {
   printf ("results:  \n");
+  bool failed = false;
   for (int i = 0; i < rst_count; i++)
     {
       struct timeb current_time = *(recv_times + i);
       if (current_time.millitm == 0)
-        printf ("Failed to detect due to insufficient information\n");
+        {
+          printf ("Failed to detect due to insufficient information\n");
+          failed = true;
+          printf ("Missing data for index %d\n", i);
+        }
+      else
+        printf ("Found data for index %d with %d\n", i, current_time.millitm);
     }
+  if (failed)
+    return;
   double low_entropy_duration = compute_time_diff(*recv_times, *(recv_times + 1));
   double high_entropy_duration = compute_time_diff(*(recv_times + 2), *(recv_times + 3));
   printf("Time between low entropy packets %.f mss and between high entropy packets %.f mss\n",
@@ -717,8 +773,37 @@ double compute_time_diff (struct timeb time_1, struct timeb time_2)
 }
 
 int
-start_rst_listener (pthread_t *rst_listener_thread, struct rst_listener_args *args)
+start_rst_listener (
+  pthread_t *rst_listener_thread,
+  struct rst_listener_args *args,
+  CONFIG config,
+  struct timeb *recv_times,
+  int sockfd, struct
+  sockaddr_in *sin,
+  struct sockaddr_in *head_sockaddr_in,
+  int *count)
 {
+  args = (struct rst_listener_args *) malloc (sizeof (struct rst_listener_args));
+  if (args == NULL)
+    {
+      perror ("Unable to malloc rst listener args");
+
+      return 1;
+    }
+  recv_times = (struct timeb *) malloc (sizeof (struct timeb) * RST_PACKET_TOTAL);
+  if (recv_times == NULL)
+    {
+      perror ("Unable to create recv_times array");
+      free (args);
+      return 1;
+    }
+
+  args->config = config;
+  args->recv_times = recv_times;
+  args->sockfd = &sockfd;
+  args->count = count;
+  args->sin = sin;
+  args->head_sockaddr_in = head_sockaddr_in;
   printf ("Starting listener\n");
 
   if (pthread_create (rst_listener_thread, NULL, (void *) &recv_rst, (void *) args))
@@ -731,7 +816,7 @@ start_rst_listener (pthread_t *rst_listener_thread, struct rst_listener_args *ar
 }
 
 int
-send_head_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockaddr_in *sout)
+send_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockaddr_in *sout)
 {
   char *packet = malloc (sizeof (char) * config->raw_packet_size);
   if (packet == NULL)
@@ -871,7 +956,7 @@ send_syn_packet (int sockfd, struct sockaddr_in *sout, char *packet)
 }
 
 int
-create_raw_socket (int *sockfd, char *interface)
+create_raw_socket (int *sockfd, char *interface, CONFIG config)
 {
   *sockfd = socket (AF_INET, SOCK_RAW, IPPROTO_TCP);
   if (*sockfd < 0)
@@ -883,23 +968,34 @@ create_raw_socket (int *sockfd, char *interface)
   const int *val = &one;
   if (setsockopt (*sockfd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
     {
+      close (*sockfd);
       perror ("Failed to set socket opt for raw socket");
       return 1;
     }
-
+//  struct timeval time;
+////  time.tv_sec = config->inter_measure_time / 4;
+//  time.tv_sec = 4;
+//  time.tv_usec = 0;
+//  if (setsockopt (*sockfd, SOL_SOCKET, SO_RCVTIMEO, &time, sizeof (time)) < 0)
+//    {
+//      perror ("Failed to set socket opt for raw socket for recv timeout");
+//      close (*sockfd);
+//      return 1;
+//    }
   struct ifreq ifr;
   memset (&ifr, 0, sizeof (struct ifreq));
-
   // TODO check if need error handling around strcpy
   strcpy (ifr.ifr_ifrn.ifrn_name, interface);
   if (ioctl (*sockfd, SIOCGIFFLAGS, &ifr) == -1)
     {
+      close (*sockfd);
       perror ("Unable to get flags for network interface");
       return 1;
     }
   ifr.ifr_ifru.ifru_flags |= IFF_PROMISC;
   if (ioctl (*sockfd, SIOCGIFFLAGS, &ifr) == -1)
     {
+      close (*sockfd);
       perror ("Unable to set network interface to promiscuous mode");
       return 1;
     }
