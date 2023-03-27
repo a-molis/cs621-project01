@@ -13,6 +13,7 @@
 // TODO update random numbers for TCP send
 // TODO make sure single application does not seg fault if not run without root
 // TODO create pcap files
+// TODO update times in the client server code or setup with thread
 
 int main(int argc, char *argv[])
 {
