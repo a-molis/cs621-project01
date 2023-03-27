@@ -33,6 +33,11 @@ int destroy_tcp_handler(TCP_HANDLER handler)
 TCP_SERVER tcp_new_server(int port)
 {
   TCP_SERVER server = malloc (sizeof (struct TCP_SOCKET_HANDLER));
+  if (server == NULL)
+    {
+      perror ("Error allocating memory for server");
+      return NULL;
+    }
   server->port = port;
   return server;
 }
@@ -42,16 +47,21 @@ int tcp_server_start(TCP_SERVER server)
   int sock, optval = 1;
   if ((sock = socket (AF_INET, SOCK_STREAM, 0)) < 0)
     {
-      perror ("couldn’t create TCP socket");
-      abort ();
+      perror ("Failed to create TCP socket for server");
+      return 1;
     }
   TCP_HANDLER handler = new_tcp_handler (sock);
+  if (handler == NULL)
+    {
+      perror ("Error creating TCP_HANDLER in tcp_server_start");
+      return 1;
+    }
   server->handler = handler;
   if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &optval,
                   sizeof (optval)) < 0)
     {
       perror ("Could not resuse address");
-      abort ();
+      return 1;
     }
   printf("Set up server socket\n");
   struct sockaddr_in sin;
@@ -66,6 +76,7 @@ int tcp_server_start(TCP_SERVER server)
     }
 
   printf("Bound server to server_port %d\n", server->port);
+  // TODO change 10 to value in constants
   if (listen (sock, 10) < 0)
     {
       perror ("error listening");
@@ -85,7 +96,7 @@ TCP_HANDLER tcp_server_next_connection(TCP_SERVER server)
   if (client_sock < 0)
     {
       perror ("error accepting connection");
-      abort ();
+      return NULL;
     }
   printf("Server made  connection to client on server_port %d\n", server->port);
   return new_tcp_handler (client_sock);

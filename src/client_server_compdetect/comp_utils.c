@@ -14,6 +14,7 @@
 #include <linux/if.h>
 #include <pthread.h>
 #include <sys/ioctl.h>
+#include <stdbool.h>
 #include "comp_utils.h"
 #include "config.h"
 #include "constants.h"
@@ -59,6 +60,10 @@ void print_results (struct timeb *recv_times, const int rst_count);
 double compute_time_diff (struct timeb time_1, struct timeb time_2);
 
 int
+get_low_entropy_data (UDP_HANDLER client_handler, CONFIG config, enum train_type type, char *result, double *low_entropy_duration);
+int process_comp (char *result, double low_entropy_duration, double high_entropy_duration);
+int process_train (CONFIG config, struct timeb recv_times[], double *mss, char result[], enum train_type t);
+int
 client_pre_probe (CONFIG config, char *config_str)
 {
   TCP_CLIENT_CONN client_conn = tcp_new_client (config->server_ip, config->tcp_probing_port);
@@ -86,27 +91,40 @@ CONFIG server_pre_probe (int port)
 {
   printf("starting server pre-probe stage\n");
   TCP_SERVER server = tcp_new_server (port);
-  int started = tcp_server_start (server);
-  printf("started %d\n", started);
-  if (started)
+  if (server == NULL)
     {
+      perror ("Error creating TCP server");
+      return NULL;
+    }
+  if (tcp_server_start (server))
+    {
+      if (destroy_tcp_sever (server))
+        printf ("Error destroying server");
       perror ("Unable to start server in pre probe");
-      abort ();
+      return NULL;
     }
   printf("TCP server started in server pre-probe stage\n");
   TCP_HANDLER client_handler = tcp_server_next_connection (server);
+  if (client_handler == NULL)
+    {
+      if (destroy_tcp_sever (server))
+        printf ("Error destroying server");
+      perror ("Failed to create client_handler in server_pre_probe");
+      return NULL;
+    }
   char buf[MAX_TCP_SIZE];
   int buf_len = 0;
-  int received = tcp_recv (client_handler, buf, &buf_len);
-  if (received)
+  if (tcp_recv (client_handler, buf, &buf_len))
     {
+      if (destroy_tcp_sever (server) | destroy_tcp_handler (client_handler))
+        printf ("error destroying server or handler");
       perror ("Server failed to get config str from client");
-      abort ();
+      return NULL;
     }
   buf[buf_len] = '\0';
   printf ("server received config\n\n %s \n", buf);
 
-  if (destroy_tcp_sever (server) || destroy_tcp_handler (client_handler))
+  if (destroy_tcp_sever (server) | destroy_tcp_handler (client_handler))
     {
       perror ("Server failed to close tcp conn in pre probe");
       abort ();
@@ -116,9 +134,8 @@ CONFIG server_pre_probe (int port)
   if (config == NULL)
     {
       perror ("Server failed to convert string config from client into config struct\n");
-      return 1;
+      return NULL;
     }
-
   printf ("Server converted config str into config struct\n");
   return config;
 }
@@ -211,66 +228,62 @@ void signal_handler ()
 
 int server_probe (CONFIG config, char *result)
 {
-  printf("Starting server probe stage on port %d\n", config->udp_dest_port);
   UDP_SERVER udp_server = udp_new_server (config->udp_dest_port);
   if (udp_server == NULL)
     {
       perror ("Unable to get new UDP server for server probe");
       return 1;
     }
-  printf("Starting server probe server\n");
-  int start = udp_server_start (udp_server);
-  if (start)
+  if (udp_server_start (udp_server))
     {
+      if (udp_server_destroy (udp_server))
+        printf ("Failed to destroy udp_server\n");
       perror ("Failed to start UDP server for server probe");
       return 1;
     }
-
-  printf("Started server probe server\n");
   UDP_HANDLER client_handler = udp_server_next_connection (udp_server);
   if (client_handler == NULL)
     {
+      if (udp_server_destroy (udp_server) | udp_destroy_handler (client_handler))
+        printf ("Failed to destroy udp_server\n");
       perror ("Failed to get next client connection for UDP probe");
       return 1;
     }
-  printf("Server set up new UDP connection with client probe\n");
-
-  // TODO use timeout from config
-  signal (SIGALRM, signal_handler);
-  alarm (UPP_TIMEOUT);
   double low_entropy_duration;
-  if (recv_udp_train (client_handler, config, low, result, &low_entropy_duration))
-    {
-      perror ("Client failed to send low entropy data");
+  if (get_low_entropy_data(client_handler, config, low, result, &low_entropy_duration)) {
+      if (udp_server_destroy (udp_server) | udp_destroy_handler (client_handler))
+        printf ("Failed to destroy udp_server\n");
+      perror ("error getting low entropy data");
       return 1;
-    }
-
-  size_t len = strlen (result);
-  if (len == 0)
-    {
-      printf ("len %lu\n", len);
-      perror ("Failed to get result for low entropy data\n");
-      return 1;
-    }
+  }
   signal (SIGALRM, signal_handler);
   alarm (20);
   double high_entropy_duration;
+  size_t len = strlen (result);
   if (recv_udp_train (client_handler, config, high, result + len, &high_entropy_duration))
     {
+      if (udp_server_destroy (udp_server) | udp_destroy_handler (client_handler))
+        printf ("Failed to destroy udp_server\n");
       perror ("Client failed to send high entropy data");
       return 1;
     }
-  if (udp_server_destroy (udp_server))
+  if (udp_server_destroy (udp_server) | udp_destroy_handler (client_handler))
     {
-      perror ("Failed to destroy udp_server in server probe stage");
+      perror ("Failed to destroy udp_server or client_handler in server probe stage");
       return 1;
     }
-  if (udp_destroy_handler (client_handler))
+  if (process_comp(result, low_entropy_duration, high_entropy_duration))
     {
-      perror("Failed to destroy udp client handler in server probe stage");
+      perror ("Failed to get entropy detection");
       return 1;
     }
-  len = strlen (result);
+  return 0;
+}
+
+int
+process_comp (char *result, double low_entropy_duration, double high_entropy_duration)
+{
+  int len = strlen (result);
   sprintf (result + len, "Compression detected: ");
   len = strlen (result);
   if (high_entropy_duration - low_entropy_duration > THRESHOLD)
@@ -278,6 +291,32 @@ int server_probe (CONFIG config, char *result)
   else
     sprintf (result + len, "False\n");
   alarm (0);
+  return 0;
+}
+
+int
+get_low_entropy_data (
+  UDP_HANDLER client_handler,
+  CONFIG config,
+  enum train_type type,
+  char *result,
+  double *low_entropy_duration)
+{
+  // TODO use timeout from config
+  signal (SIGALRM, signal_handler);
+  alarm (UPP_TIMEOUT);
+  if (recv_udp_train (client_handler, config, low, result, low_entropy_duration))
+    {
+      perror ("Client failed to send low entropy data");
+      return 1;
+    }
+  size_t len = strlen (result);
+  if (len == 0)
+    {
+      printf ("len %lu\n", len);
+      perror ("Failed to get result for low entropy data\n");
+      return 1;
+    }
   return 0;
 }
 
@@ -313,8 +352,6 @@ int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t
   char buf[config->udp_payload_size];
   struct timeb recv_times[config->udp_packet_train_len];
   bzero (recv_times, sizeof (struct timeb) * config->udp_packet_train_len);
-  int sent_success = 0;
-  int sent_failed = 0;
   for (int i = 0; i < config->udp_packet_train_len; i++)
     {
       printf("trying to receive %s entropy data from train\n", train_type_str[t]);
@@ -327,19 +364,24 @@ int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t
           printf ("%s entropy timeout\n", train_type_str[t]);
           break;
         }
-      if (received)
-        sent_failed++;
-      else
+      if (!received)
         {
-          printf ("trying to add packet id %d\n", packet_id);
           struct timeb recv_time;
           ftime(&recv_time);
           recv_times[packet_id] = recv_time;
-          sent_success++;
-          printf ("added packet id %d\n", packet_id);
         }
     }
-  printf ("ended receive\n");
+  if (process_train (config, recv_times, mss, result, high))
+    {
+      perror ("Error processing train");
+      return 1;
+    }
+  return 0;
+}
+
+int
+process_train (CONFIG config, struct timeb recv_times[], double *mss, char result[], enum train_type t)
+{
   int start = -1;
   int end = -1;
   for (int i = 0; i < config->udp_packet_train_len; i++)
@@ -363,7 +405,7 @@ int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t
       printf ("start time %d\n", start);
       printf ("end time %d\n", end);
       *mss = (1000 * difftime(recv_times[end].time, recv_times[start].time)) +
-        recv_times[end].millitm -  recv_times[start].millitm;
+             recv_times[end].millitm -  recv_times[start].millitm;
       sprintf (result, "It took %.f ms between packet between packets %d and %d for %s entropy data\n", *mss, start, end, train_type_str[t]);
       printf (result);
     }
@@ -374,7 +416,6 @@ int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t
       *mss = -1;
       return 1;
     }
-  printf ("Sent %s entropy data received from client with %d success %d failed\n", train_type_str[t], sent_success, sent_failed);
   return 0;
 }
 
@@ -383,23 +424,40 @@ server_post_probe (CONFIG config, char *result)
 {
   printf("starting server post-probe stage\n");
   TCP_SERVER server = tcp_new_server (config->tcp_probing_port);
+  if (server == NULL)
+    {
+      perror ("Error creating new TCP_SERVER");
+      return 1;
+    }
   if (tcp_server_start (server))
     {
+      if (destroy_tcp_sever (server))
+        printf ("Failed to destroy TCP_SERVER\n");
       perror ("Unable to start server in pre probe");
-      abort ();
+      return 1;
     }
   printf("TCP server started in server post-probe stage\n");
   TCP_HANDLER client_handler = tcp_server_next_connection (server);
+  if (client_handler == NULL)
+    {
+      if (destroy_tcp_sever (server))
+        printf ("Failed to destroy TCP_SERVER\n");
+      perror ("Unable to create TCP_HANDLER in pre probe");
+      return 1;
+    }
   if (tcp_send (client_handler, result, strlen (result)))
     {
+      if (destroy_tcp_sever (server) | destroy_tcp_handler (client_handler))
+        printf ("Failed to destroy TCP_SERVER or client handler\n");
       perror ("Server failed to send post probe data");
       return 1;
     }
-  if (destroy_tcp_sever (server) || destroy_tcp_handler (client_handler))
+  if (destroy_tcp_sever (server) | destroy_tcp_handler (client_handler))
     {
       perror ("Server failed to close tcp conn in post-probe");
-      abort ();
+      return 1;
     }
+  return 0;
 }
 
 int

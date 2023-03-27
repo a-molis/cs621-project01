@@ -104,9 +104,15 @@ int udp_server_start(UDP_SERVER server)
 UDP_HANDLER udp_server_next_connection (UDP_SERVER server)
 {
   struct sockaddr_in *sout = malloc (sizeof (struct sockaddr_in));
+  if (sout == NULL)
+    {
+      perror ("Error allocating memory for sout in udp_server_next_connection");
+      return NULL;
+    }
   UDP_HANDLER handler = udp_new_handler (server->sockfd);
   if (handler == NULL)
     {
+      free (sout);
       perror ("Failed to get next UDP connection for server");
       return NULL;
     }

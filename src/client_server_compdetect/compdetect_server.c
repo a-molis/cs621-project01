@@ -11,30 +11,27 @@
 
 int run_server (int port);
 
-// TODO Add error hanling to all functions
+// TODO Add error handling to all functions
 int main(int argc, char *argv[])
 {
   char *server_port = argv[1];
   if (!server_port)
     {
-      perror ("Missing required server server_port");
-      abort ();
+      printf ("Missing required server server_port\n");
+      return 1;
     }
-
   // TODO update to use more safe function than atoi
   int port = atoi (server_port);
-  int ran = run_server(port);
-  if (ran)
+  if (run_server(port))
     {
       perror ("Failed to run server");
-      abort ();
+      return 1;
     }
   return 0;
 }
 
 int run_server (int port)
 {
-
   CONFIG config = server_pre_probe (port);
   if (config == NULL)
     {
@@ -43,15 +40,16 @@ int run_server (int port)
     }
   char result[config->udp_payload_size];
   bzero (result, config->udp_payload_size);
-  int probe = server_probe (config, result);
-  if (probe)
+  if (server_probe (config, result))
     {
+      config_destroy(config);
       perror ("Client failed to probe server");
       return 1;
     }
   printf ("Result from server results:\n%s\n", result);
   if (server_post_probe(config, result))
     {
+      config_destroy(config);
       perror ("Server failed to send post probe");
       return 1;
     }

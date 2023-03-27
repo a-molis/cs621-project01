@@ -16,12 +16,12 @@ int main(int argc, char *argv[])
   if (!config_path)
     {
       printf ("Missing required arg config\n");
-      abort ();
+      return 1;
     }
   if (comp_client_run (config_path))
     {
       printf ("Error running client\n");
-      abort ();
+      return 1;
     }
   return 0;
 }
