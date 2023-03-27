@@ -12,6 +12,7 @@ int run_compdetect (char *config_path);
 // TODO add timeout for standalone
 // TODO check rubric and project outline to verify all done
 // TODO remove all print statements
+// TODO update random numbers for TCP send
 
 int main(int argc, char *argv[])
 {
