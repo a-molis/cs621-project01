@@ -674,11 +674,11 @@ send_single_train (
       perror ("Client failed to send low entropy data");
       return 1;
     }
-  if (send_tcp_syn (config, sockfd, sin, tail_sockaddr_in))
-    {
-      perror ("Failed to send_tcp_syn packet");
-      return 1;
-    }
+//  if (send_tcp_syn (config, sockfd, sin, tail_sockaddr_in))
+//    {
+//      perror ("Failed to send_tcp_syn packet");
+//      return 1;
+//    }
   return 0;
 }
 
@@ -693,16 +693,12 @@ recv_rst (void *inputs)
   uint16_t tcp_dest_head_syn_port = htons (args->config->tcp_dest_head_syn_port);
   uint16_t tcp_dest_tail_syn_port = htons (args->config->tcp_dest_tail_syn_port);
   int count = 0;
-//  printf ("count before loop %d\n", *args->count);
-//  printf ("count before loop %d\n", count);
-//  printf ("initial sockfd %d pointer: %p\n", sock, args->sockfd);
+
   while (count < RST_PACKET_TOTAL)
     {
       char buf[args->config->raw_packet_size];
       // TODO add threshold/timeout to account for lost packet
-//      printf ("sockfd before recv from %d errno %d\n", sock, errno);
       received = recvfrom (sock, buf, args->config->raw_packet_size, 0, NULL, NULL);
-//      printf ("sockfd after recv from %d errno %d\n", sock, errno);
       if (received == 0)
         {
           printf ("connection closed\n");
@@ -715,10 +711,10 @@ recv_rst (void *inputs)
           break;
 //          continue;
         }
-//      else if (received == EINTR)
-//        {
-//          printf ("received in thread is equal to EINTR \n");
-//        }
+      else if (received == EINTR)
+        {
+          printf ("received in thread is equal to EINTR \n");
+        }
       if (errno){
         printf ("sockfd: %d, errno %d\n", *args->sockfd, errno);
         break;
@@ -750,15 +746,11 @@ recv_rst (void *inputs)
           else
             *(args->recv_times + 1) = recv_time;
           count += 1;
-          printf ("Count inside loop tail %d\n", count);
           printf ("tail tcp->dest: %d, args->sin->sin_port: %d, tcp->source %d, tcp_dest_tail_syn_port %d \n", ntohs(tcp->dest), ntohs(args->sin->sin_port), ntohs (tcp->source), ntohs (tcp_dest_tail_syn_port));
           fflush( stdout );
         }
-      else if (ip->protocol == IPPROTO_TCP && tcp->dest != 5632)
-        printf ("outside tcp->dest: %d, tcp->source %d \n", ntohs(tcp->dest), ntohs (tcp->source));
       fflush( stdout );
     }
-  printf ("Count after loop %d\n", count);
   print_results (args->recv_times, RST_PACKET_TOTAL);
   printf("\n");
   char addr[INET_ADDRSTRLEN];
@@ -996,16 +988,17 @@ create_raw_socket (int *sockfd, char *interface, CONFIG config)
       perror ("Failed to set socket opt for raw socket");
       return 1;
     }
-//  struct timeval time;
-////  time.tv_sec = config->inter_measure_time / 4;
-//  time.tv_sec = 4;
-//  time.tv_usec = 0;
-//  if (setsockopt (*sockfd, SOL_SOCKET, SO_RCVTIMEO, &time, sizeof (time)) < 0)
-//    {
-//      perror ("Failed to set socket opt for raw socket for recv timeout");
-//      close (*sockfd);
-//      return 1;
-//    }
+
+  // TODO replace with alarm
+  struct timeval time;
+  time.tv_sec = 10;
+  time.tv_usec = 0;
+  if (setsockopt (*sockfd, SOL_SOCKET, SO_RCVTIMEO, &time, sizeof (time)) < 0)
+    {
+      perror ("Failed to set socket opt for raw socket for recv timeout");
+      close (*sockfd);
+      return 1;
+    }
   struct ifreq ifr;
   memset (&ifr, 0, sizeof (struct ifreq));
   // TODO check if need error handling around strcpy
