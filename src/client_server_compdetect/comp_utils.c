@@ -51,7 +51,7 @@ struct rst_listener_args {
 
 int
 start_rst_listener (pthread_t *rst_listener_thread, struct rst_listener_args *args, CONFIG config, struct timeb *recv_times, int sockfd, struct
-  sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, int *count);
+  sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in);
 void print_results (struct timeb *recv_times, const int rst_count);
 
 /**
@@ -512,13 +512,12 @@ compdetect_single (CONFIG config)
   struct rst_listener_args *args;
   struct timeb *recv_times;
   int sockfd = -1;
-  int count = 0;
   if (setup_raw_socket_conns (config, &sin, &head_sockaddr_in, &tail_sockaddr_in, &udp_client, &sockfd))
     {
       perror ("Error setting up raw socket conns");
       return 1;
     }
-  if (start_rst_listener (&rst_listener_thread, args, config, recv_times, sockfd, &sin, &head_sockaddr_in, &count))
+  if (start_rst_listener (&rst_listener_thread, args, config, recv_times, sockfd, &sin, &head_sockaddr_in))
     {
       perror("Failed to set up thread for receiving RST packets");
       if (udp_destroy_client (udp_client))
@@ -550,6 +549,7 @@ compdetect_single (CONFIG config)
   printf ("Trying to join thread\n");
   pthread_join(rst_listener_thread, NULL);
   printf ("joined thread\n");
+  // TODO check why double free'd
   free (args);
 //  close (sockfd);
   free (recv_times);
@@ -682,8 +682,10 @@ recv_rst (void *inputs)
   ssize_t received;
   uint16_t tcp_dest_head_syn_port = htons (args->config->tcp_dest_head_syn_port);
   uint16_t tcp_dest_tail_syn_port = htons (args->config->tcp_dest_tail_syn_port);
-  printf ("count before loop %d\n", *args->count);
-  while (*args->count < RST_PACKET_TOTAL)
+  int count = 0;
+//  printf ("count before loop %d\n", *args->count);
+  printf ("count before loop %d\n", count);
+  while (count < RST_PACKET_TOTAL)
     {
       // TODO add threshold/timeout to account for lost packet
       received = recvfrom (*args->sockfd, buf, args->config->raw_packet_size, 0, NULL, NULL);
@@ -713,8 +715,8 @@ recv_rst (void *inputs)
             *(args->recv_times + 2) = recv_time;
           else
             *(args->recv_times + 0) = recv_time;
-          *args->count += 1;
-          printf ("Count inside loop head %d\n", *args->count);
+          count += 1;
+          printf ("Count inside loop head %d\n", count);
         }
       else if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_tail_syn_port && tcp->rst)
         {
@@ -725,11 +727,11 @@ recv_rst (void *inputs)
             *(args->recv_times + 3) = recv_time;
           else
             *(args->recv_times + 1) = recv_time;
-          *args->count += 1;
-          printf ("Count inside loop tail %d\n", *args->count);
+          count += 1;
+          printf ("Count inside loop tail %d\n", count);
         }
     }
-  printf ("Count after loop %d\n", *args->count);
+  printf ("Count after loop %d\n", count);
   print_results (args->recv_times, RST_PACKET_TOTAL);
   printf("\n");
   char addr[INET_ADDRSTRLEN];
@@ -780,8 +782,7 @@ start_rst_listener (
   struct timeb *recv_times,
   int sockfd, struct
   sockaddr_in *sin,
-  struct sockaddr_in *head_sockaddr_in,
-  int *count)
+  struct sockaddr_in *head_sockaddr_in)
 {
   args = (struct rst_listener_args *) malloc (sizeof (struct rst_listener_args));
   if (args == NULL)
@@ -797,11 +798,11 @@ start_rst_listener (
       free (args);
       return 1;
     }
-
+  int count = 0;
   args->config = config;
   args->recv_times = recv_times;
   args->sockfd = &sockfd;
-  args->count = count;
+  args->count = &count;
   args->sin = sin;
   args->head_sockaddr_in = head_sockaddr_in;
   printf ("Starting listener\n");
