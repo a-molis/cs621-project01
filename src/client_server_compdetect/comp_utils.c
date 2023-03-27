@@ -512,47 +512,55 @@ compdetect_single (CONFIG config)
   struct rst_listener_args *args;
   struct timeb *recv_times;
   int sockfd = -1;
+  printf ("Sockfd before raw setup %d\n", sockfd);
   if (setup_raw_socket_conns (config, &sin, &head_sockaddr_in, &tail_sockaddr_in, &udp_client, &sockfd))
     {
       perror ("Error setting up raw socket conns");
       return 1;
     }
+
+  printf ("Sockfd after raw setup %d\n", sockfd);
   if (start_rst_listener (&rst_listener_thread, args, config, recv_times, sockfd, &sin, &head_sockaddr_in))
     {
       perror("Failed to set up thread for receiving RST packets");
       if (udp_destroy_client (udp_client))
         printf ("Failed to destroy client");
 //      close (sockfd);
-      free (args);
-      free (recv_times);
+//      free (args);
+//      free (recv_times);
       return 1;
     }
+  printf ("Sockfd after start listener %d\n", sockfd);
   if (send_single_train (config, sockfd, &sin, &head_sockaddr_in, &tail_sockaddr_in, udp_client))
     {
       perror ("Failed to send packet train for compdetect");
       if (udp_destroy_client (udp_client))
         printf ("Failed to destroy client");
-      free (args);
-//      close (sockfd);
-      free (recv_times);
+//      free (args);
+////      close (sockfd);
+//      free (recv_times);
       return 1;
     }
+  printf ("Sockfd after send single train%d\n", sockfd);
   if (udp_destroy_client (udp_client))
     {
       perror("Failed to set up thread for receiving RST packets");
-      free (args);
-      free (recv_times);
+//      free (args);
+//      free (recv_times);
 //      close (sockfd);
       perror ("Failed to destroy upd client");
       return 1;
     }
+  printf ("Sockfd after destroy udp client%d\n", sockfd);
   printf ("Trying to join thread\n");
   pthread_join(rst_listener_thread, NULL);
+
+  printf ("Sockfd after join%d\n", sockfd);
   printf ("joined thread\n");
   // TODO check why double free'd
-  free (args);
-//  close (sockfd);
-  free (recv_times);
+//  free (args);
+////  close (sockfd);
+//  free (recv_times);
   return 0;
 }
 
@@ -677,33 +685,44 @@ send_single_train (
 void
 recv_rst (void *inputs)
 {
+
   struct rst_listener_args *args = (struct rst_listener_args*) inputs;
+  int sock = *args->sockfd;
   char buf[args->config->raw_packet_size];
   ssize_t received;
   uint16_t tcp_dest_head_syn_port = htons (args->config->tcp_dest_head_syn_port);
   uint16_t tcp_dest_tail_syn_port = htons (args->config->tcp_dest_tail_syn_port);
   int count = 0;
 //  printf ("count before loop %d\n", *args->count);
-  printf ("count before loop %d\n", count);
+//  printf ("count before loop %d\n", count);
+//  printf ("initial sockfd %d pointer: %p\n", sock, args->sockfd);
   while (count < RST_PACKET_TOTAL)
     {
+      char buf[args->config->raw_packet_size];
       // TODO add threshold/timeout to account for lost packet
-      received = recvfrom (*args->sockfd, buf, args->config->raw_packet_size, 0, NULL, NULL);
+//      printf ("sockfd before recv from %d errno %d\n", sock, errno);
+      received = recvfrom (sock, buf, args->config->raw_packet_size, 0, NULL, NULL);
+//      printf ("sockfd after recv from %d errno %d\n", sock, errno);
       if (received == 0)
         {
           printf ("connection closed\n");
           break;
         }
+
       else if (received < 0)
         {
-//          printf ("Errno from invalid recv %d\n", errno);
-          continue;
+          printf ("Errno from invalid recv %d sockfd: %d, pointer %p\n", errno, *args->sockfd, args->sockfd);
+          break;
+//          continue;
         }
 //      else if (received == EINTR)
 //        {
 //          printf ("received in thread is equal to EINTR \n");
 //        }
-
+      if (errno){
+        printf ("sockfd: %d, errno %d\n", *args->sockfd, errno);
+        break;
+      }
       struct iphdr *ip = (struct iphdr *) buf;
       struct tcphdr *tcp = (struct tcphdr *) (buf + (ip->ihl * 4));
       if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_head_syn_port && tcp->rst)
@@ -711,25 +730,33 @@ recv_rst (void *inputs)
           printf ("Received head!!\n");
           struct timeb recv_time;
           ftime(&recv_time);
-          if (*args->count > 1)
+          if (count > 1)
             *(args->recv_times + 2) = recv_time;
           else
             *(args->recv_times + 0) = recv_time;
           count += 1;
           printf ("Count inside loop head %d\n", count);
+          printf ("head tcp->dest: %d, args->sin->sin_port: %d, tcp->source %d, tcp_dest_head_syn_port %d \n", ntohs(tcp->dest), ntohs(args->sin->sin_port), ntohs (tcp->source), ntohs (tcp_dest_head_syn_port));
+          fflush( stdout );
         }
+
       else if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_tail_syn_port && tcp->rst)
         {
           printf ("Received tail!!\n");
           struct timeb recv_time;
           ftime(&recv_time);
-          if (*args->count > 1)
+          if (count > 1)
             *(args->recv_times + 3) = recv_time;
           else
             *(args->recv_times + 1) = recv_time;
           count += 1;
           printf ("Count inside loop tail %d\n", count);
+          printf ("tail tcp->dest: %d, args->sin->sin_port: %d, tcp->source %d, tcp_dest_tail_syn_port %d \n", ntohs(tcp->dest), ntohs(args->sin->sin_port), ntohs (tcp->source), ntohs (tcp_dest_tail_syn_port));
+          fflush( stdout );
         }
+      else if (ip->protocol == IPPROTO_TCP && tcp->dest != 5632)
+        printf ("outside tcp->dest: %d, tcp->source %d \n", ntohs(tcp->dest), ntohs (tcp->source));
+      fflush( stdout );
     }
   printf ("Count after loop %d\n", count);
   print_results (args->recv_times, RST_PACKET_TOTAL);
@@ -795,7 +822,7 @@ start_rst_listener (
   if (recv_times == NULL)
     {
       perror ("Unable to create recv_times array");
-      free (args);
+//      free (args);
       return 1;
     }
   int count = 0;
@@ -825,9 +852,7 @@ send_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockadd
       perror ("Error allocating packet with malloc");
       return 1;
     }
-
   printf ("head_sockaddr_in addr %d\n", sout->sin_addr.s_addr);
-
   if (new_syn_packet (sin, sout, packet, config->raw_packet_size, 1))
     {
       perror ("Error creating syn packet");
@@ -878,7 +903,7 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
 
   tcp->source = sin->sin_port;
   tcp->dest = sout->sin_port;
-  tcp->seq = htonl(55);
+  tcp->seq = htonl(rand() % 4294967295);
   tcp->ack_seq = htonl (0);
   tcp->syn = 1;
   tcp->cwr = 0;
@@ -907,8 +932,6 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
   memcpy (pseudo_packet + sizeof (struct pseudo_header), (void *) tcp, sizeof (struct tcphdr));
   tcp->check = checksum2 ((const char *) pseudo_packet, pseudo_size);
   ip->check = checksum2 (packet, ip->tot_len);
-  printf("checksum2 %d\n", ip->check);
-  printf("tcp checksum %d\n", tcp->check);
   free (pseudo_packet);
   return 0;
 }
@@ -952,7 +975,7 @@ send_syn_packet (int sockfd, struct sockaddr_in *sout, char *packet)
       perror ("Error sending syn packet");
       return 1;
     }
-  printf ("Sent raw socket %d \n", sent);
+
   return 0;
 }
 
@@ -969,7 +992,7 @@ create_raw_socket (int *sockfd, char *interface, CONFIG config)
   const int *val = &one;
   if (setsockopt (*sockfd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
     {
-      close (*sockfd);
+//      close (*sockfd);
       perror ("Failed to set socket opt for raw socket");
       return 1;
     }
@@ -989,14 +1012,14 @@ create_raw_socket (int *sockfd, char *interface, CONFIG config)
   strcpy (ifr.ifr_ifrn.ifrn_name, interface);
   if (ioctl (*sockfd, SIOCGIFFLAGS, &ifr) == -1)
     {
-      close (*sockfd);
+//      close (*sockfd);
       perror ("Unable to get flags for network interface");
       return 1;
     }
   ifr.ifr_ifru.ifru_flags |= IFF_PROMISC;
   if (ioctl (*sockfd, SIOCGIFFLAGS, &ifr) == -1)
     {
-      close (*sockfd);
+//      close (*sockfd);
       perror ("Unable to set network interface to promiscuous mode");
       return 1;
     }

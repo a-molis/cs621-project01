@@ -24,7 +24,7 @@ int destroy_tcp_handler(TCP_HANDLER handler)
 {
   if (handler)
     {
-      close (handler->sockfd);
+//      close (handler->sockfd);
       free (handler);
     }
   return 0;
