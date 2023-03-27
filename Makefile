@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS += -g -std=c99 -Wall -I include -include include/config.h -include include/udp_sock_handler.h -I ext/cJSON -pthread
+CFLAGS += -g -std=c99 -Wall -I include -include include/config.h -include include/comp_utils.h -include include/udp_sock_handler.h -include include/udp_sock_handler.h -I ext/cJSON -pthread
 
 test_dir=test
 src=src
@@ -11,6 +11,7 @@ OBJ=$(test_dir)/simple_client.o $(test_dir)/simple_server.o $(test_dir)/test_sim
 test_bin=$(test_dir)/simple_client $(test_dir)/simple_server
 test_run=$(test_dir)/test_runner.sh
 test_files=$(test_dir)/test_simple_client_server $(test_dir)/test_tcp_send test/test_simple_udp_conn test/test_udp_setup test/test_pre_probe test/test_udp_probe test/test_part_one
+root_test_files=test/test_part_two $(test_files)
 exe=$(addprefix ./, $(test_files))
 bin=src/client_server_compdetect/compdetect_client src/client_server_compdetect/compdetect_server src/client_server_compdetect/compdetect
 
@@ -20,6 +21,9 @@ simple_server: $(test_dir)/simple_server
 
 test: $(test_files)
 	sh $(test_run) $(exe)
+
+test_all:
+	sudo sh $(test_run) $(root_test_files)
 
 $(OBJ): %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

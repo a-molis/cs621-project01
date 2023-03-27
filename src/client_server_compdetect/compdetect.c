@@ -3,8 +3,6 @@
 #include "comp_utils.h"
 #include "udp_sock_handler.h"
 
-int run_compdetect (char *config_path);
-
 // TODO make sure all errors handled
 // TODO error check if not run with sudo
 // TODO set TTL for udp packet train
@@ -13,6 +11,8 @@ int run_compdetect (char *config_path);
 // TODO check rubric and project outline to verify all done
 // TODO remove all print statements
 // TODO update random numbers for TCP send
+// TODO make sure single application does not seg fault if not run without root
+// TODO create pcap files
 
 int main(int argc, char *argv[])
 {

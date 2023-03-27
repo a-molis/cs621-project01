@@ -1,5 +1,6 @@
 #include "config.h"
 #include "constants.h"
+#include "udp_sock_handler.h"
 
 #ifndef _COMPDETECT_H_
 #define _COMPDETECT_H_
@@ -12,5 +13,6 @@ int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t
 int server_post_probe (CONFIG config, char *result);
 int client_post_probe (CONFIG config);
 int compdetect_single (CONFIG config);
+int run_compdetect (char *config_path);
 
 #endif //_COMPDETECT_H_
