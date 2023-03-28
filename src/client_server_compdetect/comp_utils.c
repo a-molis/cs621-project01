@@ -643,15 +643,15 @@ setup_raw_socket_conns (
       perror ("Client failed to set up UDP connection with server in client probe stage\n");
       return 1;
     }
-//  int sock = udp_client->handler->sockfd;
-//  int ttl = config->udp_packet_ttl;
-//  if (setsockopt (sock, IPPROTO_IP, IP_TTL, &ttl, sizeof (ttl)) < 0)
-//    {
-//      perror ("Failed to set socket option for UDP TTL");
-//      if (udp_destroy_client (udp_client))
-//        printf ("Failed to destroy client");
-//      return 1;
-//    }
+  int sock = (*udp_client)->handler->sockfd;
+  int ttl = config->udp_packet_ttl;
+  if (setsockopt (sock, IPPROTO_IP, IP_TTL, &ttl, sizeof (ttl)) < 0)
+    {
+      perror ("Failed to set socket option for UDP TTL");
+      if (udp_destroy_client (udp_client))
+        printf ("Failed to destroy client");
+      return 1;
+    }
   if (setup_sockaddrs (config, sin, head_sockaddr_in, tail_sockaddr_in))
     {
       perror ("Failed to setup sockaddrs");
