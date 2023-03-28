@@ -3,9 +3,12 @@
 #include "comp_utils.h"
 #include "udp_sock_handler.h"
 
+// TODO set TTL for udp packet train
 // TODO make sure all errors handled
 // TODO error check if not run with sudo
-// TODO set TTL for udp packet train
+// TODO refactor to move raw logic to other file
+// TODO uncomment all code
+// TODO add comments to all functions
 // TODO test with valgrind
 // TODO add timeout for standalone
 // TODO check rubric and project outline to verify all done
@@ -14,6 +17,9 @@
 // TODO make sure single application does not seg fault if not run without root
 // TODO create pcap files
 // TODO update times in the client server code or setup with thread
+// TODO better error handling around unable ot connect to server with different ip address
+// TODO update times
+// TODO make sure all sockets closed
 
 int main(int argc, char *argv[])
 {

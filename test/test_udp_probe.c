@@ -59,8 +59,7 @@ int main() {
   struct args *server_args = malloc (sizeof (struct args));
   server_args->port =  "12062";
   
-  // TODO update tests to use test_config.json
-  server_args->config_path = "myconfig.json";
+  server_args->config_path =  "test/test_config.json";
   server_args->tcp_dest_tail_syn_port = 12061;
   int server_status = 1;
   int client_status = 1;

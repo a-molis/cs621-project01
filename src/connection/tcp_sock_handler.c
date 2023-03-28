@@ -24,7 +24,7 @@ int destroy_tcp_handler(TCP_HANDLER handler)
 {
   if (handler)
     {
-//      close (handler->sockfd);
+      close (handler->sockfd);
       free (handler);
     }
   return 0;
@@ -164,7 +164,6 @@ int tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len)
   int remaining = buf_len;
   while (total < buf_len) 
     {
-      printf("total %d\n", total);
       int received = recv(handler->sockfd, buf + total, remaining, 0);
       if (received < 0)
         {
@@ -173,7 +172,6 @@ int tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len)
         }
       total += received;
       remaining -= received;
-      printf("Total in recivn: %d\n", total);
     }
     return total;
 }

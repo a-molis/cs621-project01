@@ -214,11 +214,9 @@ int udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len)
 
 int udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len)
 {
-  printf("Trying to receive data with len %d from udp_recvfrom_n\n", buf_len);
 
       int received = recvfrom (handler->sockfd, buf, buf_len, 0,
                               (struct sockaddr *) handler->addr, &handler->addr_len);
-      printf ("Received %d bytes\n", received);
       if (received < buf_len)
         {
           perror("udp_recvfrom_n failed to recv enough data from socket");

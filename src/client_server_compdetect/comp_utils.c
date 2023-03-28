@@ -72,6 +72,8 @@ int
 setup_sockaddrs (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in);
 int
 setup_raw_socket_conns (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in, UDP_CLIENT_CONN *udp_client, int *sockfd);
+int close_recv_thread (pthread_t rst_listener_thread);
+
 int
 client_pre_probe (CONFIG config, char *config_str)
 {
@@ -98,7 +100,6 @@ client_pre_probe (CONFIG config, char *config_str)
 
 CONFIG server_pre_probe (int port)
 {
-  printf("starting server pre-probe stage\n");
   TCP_SERVER server = tcp_new_server (port);
   if (server == NULL)
     {
@@ -112,7 +113,6 @@ CONFIG server_pre_probe (int port)
       perror ("Unable to start server in pre probe");
       return NULL;
     }
-  printf("TCP server started in server pre-probe stage\n");
   TCP_HANDLER client_handler = tcp_server_next_connection (server);
   if (client_handler == NULL)
     {
@@ -131,21 +131,18 @@ CONFIG server_pre_probe (int port)
       return NULL;
     }
   buf[buf_len] = '\0';
-  printf ("server received config\n\n %s \n", buf);
 
   if (destroy_tcp_sever (server) | destroy_tcp_handler (client_handler))
     {
       perror ("Server failed to close tcp conn in pre probe");
       abort ();
     }
-  printf ("Server converting config str into config struct\n");
   CONFIG config = config_new (buf);
   if (config == NULL)
     {
       perror ("Server failed to convert string config from client into config struct\n");
       return NULL;
     }
-  printf ("Server converted config str into config struct\n");
   return config;
 }
 
@@ -363,7 +360,6 @@ int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t
   bzero (recv_times, sizeof (struct timeb) * config->udp_packet_train_len);
   for (int i = 0; i < config->udp_packet_train_len; i++)
     {
-      printf("trying to receive %s entropy data from train\n", train_type_str[t]);
       int received = udp_recvfrom_n (client_handler, buf, config->udp_payload_size);
       uint16_t packet_id = 0;
       get_packet_id (buf, &packet_id);
@@ -411,8 +407,6 @@ process_train (CONFIG config, struct timeb recv_times[], double *mss, char resul
     }
   if (start != -1 && end != -1)
     {
-      printf ("start time %d\n", start);
-      printf ("end time %d\n", end);
       *mss = (1000 * difftime(recv_times[end].time, recv_times[start].time)) +
              recv_times[end].millitm -  recv_times[start].millitm;
       sprintf (result, "It took %.f ms between packet between packets %d and %d for %s entropy data\n", *mss, start, end, train_type_str[t]);
@@ -500,12 +494,6 @@ client_post_probe (CONFIG config)
   return 0;
 }
 
-void
-stop_thread (union sigval data)
-{
-  write (STDOUT_FILENO, "Timeouts\n", 9);
-}
-
 int
 compdetect_single (CONFIG config)
 {
@@ -563,31 +551,17 @@ compdetect_single (CONFIG config)
   printf ("Sockfd after destroy udp client%d\n", sockfd);
   printf ("Trying to join thread\n");
 
-  timer_t id = 0;
-  struct sigevent sig;
-  struct itimerspec tspec;
-  tspec.it_value.tv_sec = 5;
-  tspec.it_interval.tv_sec = 1;
-  tspec.it_value.tv_nsec = 0;
-  tspec.it_interval.tv_nsec = 0;
-  sig.sigev_notify = SIGEV_THREAD;
-//  int five = 500;
-//  sig.sigev_value.sival_ptr = &five;
-  sig.sigev_notify_function = stop_thread;
-  if (timer_create (CLOCK_MONOTONIC, &sig, &id))
+  if (close_recv_thread(rst_listener_thread))
     {
-      printf ("error creating timer");
+      perror ("Error closing thread for recv");
+      return 1;
+      //  free (args);
+////  close (sockfd);
+//  free (recv_times);
     }
-  if (timer_settime (id, 0, &tspec, NULL))
-    {
-      printf ("Error starting timer");
-    }
-    else
-      printf ("Started timer\n");
 
 
 //  pthread_kill(rst_listener_thread, SIGALRM);
-  pthread_join(rst_listener_thread, NULL);
 //  pthread_kill(rst_listener_thread, SIGALRM);
   printf ("Sockfd after join%d\n", sockfd);
   printf ("joined thread\n");
@@ -595,6 +569,53 @@ compdetect_single (CONFIG config)
 //  free (args);
 ////  close (sockfd);
 //  free (recv_times);
+  return 0;
+}
+
+struct thread_info {
+    pthread_t rst_listener_thread;
+};
+
+void
+stop_thread (union sigval input)
+{
+  struct thread_info *thread_data = (struct thread_info *) input.sival_ptr;
+  printf ("Timeout reached for receiving RST packets\n");
+  pthread_kill (thread_data->rst_listener_thread, SIGALRM);
+}
+
+int
+close_recv_thread (pthread_t rst_listener_thread)
+{
+  // Reviewed this source on how to create a timer
+  // https://opensource.com/article/21/10/linux-timers
+  timer_t id = 0;
+  struct thread_info info;
+  info.rst_listener_thread = rst_listener_thread;
+  struct sigevent event;
+  event.sigev_notify = SIGEV_THREAD;
+  event.sigev_notify_function = &stop_thread;
+  event.sigev_value.sival_ptr = &info;
+  struct itimerspec timer;
+  timer.it_value.tv_sec = 1;
+  timer.it_value.tv_nsec = 0;
+  timer.it_interval.tv_nsec = 0;
+  timer.it_interval.tv_sec = 0;
+  if (timer_create (CLOCK_REALTIME, &event, &id))
+    {
+      perror ("Error creating timer");
+      return 1;
+    }
+  if (timer_settime (id, 0, &timer, NULL))
+    {
+      perror ("Error starting timer");
+      return 1;
+    }
+  if (pthread_join (rst_listener_thread, NULL))
+    {
+      perror ("Error joining thread for rst listener");
+      return 1;
+    }
   return 0;
 }
 
@@ -708,11 +729,11 @@ send_single_train (
       perror ("Client failed to send low entropy data");
       return 1;
     }
-//  if (send_tcp_syn (config, sockfd, sin, tail_sockaddr_in))
-//    {
-//      perror ("Failed to send_tcp_syn packet");
-//      return 1;
-//    }
+  if (send_tcp_syn (config, sockfd, sin, tail_sockaddr_in))
+    {
+      perror ("Failed to send_tcp_syn packet");
+      return 1;
+    }
   return 0;
 }
 
