@@ -72,7 +72,7 @@ int
 setup_sockaddrs (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in);
 int
 setup_raw_socket_conns (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in, UDP_CLIENT_CONN *udp_client, int *sockfd);
-int close_recv_thread (pthread_t rst_listener_thread);
+int close_recv_thread (pthread_t *rst_listener_thread);
 
 int
 client_pre_probe (CONFIG config, char *config_str)
@@ -512,7 +512,6 @@ compdetect_single (CONFIG config)
       perror ("Error setting up raw socket conns");
       return 1;
     }
-  sigset_t set;
 
   printf ("Sockfd after raw setup %d\n", sockfd);
   if (start_rst_listener (&rst_listener_thread, args, config, recv_times, sockfd, &sin, &head_sockaddr_in))
@@ -525,7 +524,7 @@ compdetect_single (CONFIG config)
 //      free (recv_times);
       return 1;
     }
-
+  printf ("thread pointer at start %lu", rst_listener_thread);
 
   printf ("Sockfd after start listener %d\n", sockfd);
   if (send_single_train (config, sockfd, &sin, &head_sockaddr_in, &tail_sockaddr_in, udp_client))
@@ -549,9 +548,9 @@ compdetect_single (CONFIG config)
       return 1;
     }
   printf ("Sockfd after destroy udp client%d\n", sockfd);
-  printf ("Trying to join thread\n");
 
-  if (close_recv_thread(rst_listener_thread))
+  printf ("Trying to start timer\n");
+  if (close_recv_thread(&rst_listener_thread))
     {
       perror ("Error closing thread for recv");
       return 1;
@@ -559,7 +558,9 @@ compdetect_single (CONFIG config)
 ////  close (sockfd);
 //  free (recv_times);
     }
-
+  printf ("Trying to join thread\n");
+  printf ("thread pointer before join %lu\n", rst_listener_thread);
+//  pthread_join (rst_listener_thread, NULL);
 
 //  pthread_kill(rst_listener_thread, SIGALRM);
 //  pthread_kill(rst_listener_thread, SIGALRM);
@@ -585,13 +586,13 @@ stop_thread (union sigval input)
 }
 
 int
-close_recv_thread (pthread_t rst_listener_thread)
+close_recv_thread (pthread_t *rst_listener_thread)
 {
   // Reviewed this source on how to create a timer
   // https://opensource.com/article/21/10/linux-timers
   timer_t id = 0;
   struct thread_info info;
-  info.rst_listener_thread = rst_listener_thread;
+  info.rst_listener_thread = *rst_listener_thread;
   struct sigevent event;
   event.sigev_notify = SIGEV_THREAD;
   event.sigev_notify_function = &stop_thread;
@@ -611,11 +612,12 @@ close_recv_thread (pthread_t rst_listener_thread)
       perror ("Error starting timer");
       return 1;
     }
-  if (pthread_join (rst_listener_thread, NULL))
+  if (pthread_join (*rst_listener_thread, NULL))
     {
       perror ("Error joining thread for rst listener");
       return 1;
     }
+  printf ("Closed thread\n");
   return 0;
 }
 
@@ -634,7 +636,6 @@ setup_raw_socket_conns (
       perror ("Failed to create udp_client");
       return 1;
     }
-  printf("Setting up client upd connection\n");
   if (udp_client_connect ((*udp_client)))
     {
       if (udp_destroy_client ((*udp_client)))
@@ -642,8 +643,15 @@ setup_raw_socket_conns (
       perror ("Client failed to set up UDP connection with server in client probe stage\n");
       return 1;
     }
-  printf("Client set up udp client upd connection\n");
-
+//  int sock = udp_client->handler->sockfd;
+//  int ttl = config->udp_packet_ttl;
+//  if (setsockopt (sock, IPPROTO_IP, IP_TTL, &ttl, sizeof (ttl)) < 0)
+//    {
+//      perror ("Failed to set socket option for UDP TTL");
+//      if (udp_destroy_client (udp_client))
+//        printf ("Failed to destroy client");
+//      return 1;
+//    }
   if (setup_sockaddrs (config, sin, head_sockaddr_in, tail_sockaddr_in))
     {
       perror ("Failed to setup sockaddrs");
@@ -783,12 +791,11 @@ recv_rst (void *inputs)
           printf ("Received head!!\n");
           struct timeb recv_time;
           ftime(&recv_time);
-          if (*args->count > 1)
+          if (count > 1)
             *(args->recv_times + 2) = recv_time;
           else
             *(args->recv_times + 0) = recv_time;
-          *args->count += 1;
-          printf ("Count inside loop head %d\n", count);
+          count += 1;
           printf ("head tcp->dest: %d, args->sin->sin_port: %d, tcp->source %d, tcp_dest_head_syn_port %d \n", ntohs(tcp->dest), ntohs(args->sin->sin_port), ntohs (tcp->source), ntohs (tcp_dest_head_syn_port));
           fflush( stdout );
         }
@@ -798,16 +805,17 @@ recv_rst (void *inputs)
           printf ("Received tail!!\n");
           struct timeb recv_time;
           ftime(&recv_time);
-          if (*args->count  > 1)
+          if (count  > 1)
             *(args->recv_times + 3) = recv_time;
           else
             *(args->recv_times + 1) = recv_time;
-          *args->count += 1;
+          count += 1;
           printf ("tail tcp->dest: %d, args->sin->sin_port: %d, tcp->source %d, tcp_dest_tail_syn_port %d \n", ntohs(tcp->dest), ntohs(args->sin->sin_port), ntohs (tcp->source), ntohs (tcp_dest_tail_syn_port));
           fflush( stdout );
         }
       fflush( stdout );
     }
+  printf ("Completed loop");
   print_results (args->recv_times, RST_PACKET_TOTAL);
   printf("\n");
   char addr[INET_ADDRSTRLEN];

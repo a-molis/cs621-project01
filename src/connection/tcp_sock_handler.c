@@ -63,19 +63,15 @@ int tcp_server_start(TCP_SERVER server)
       perror ("Could not resuse address");
       return 1;
     }
-  printf("Set up server socket\n");
   struct sockaddr_in sin;
   memset (&sin, 0, sizeof (sin));
   sin.sin_addr.s_addr = INADDR_ANY;
   sin.sin_port = htons (server->port);
-  printf("Binding server to server_port %d\n", server->port);
   if (bind (sock, (struct sockaddr *) &sin, sizeof (sin)) < 0)
     {
       perror ("cannot bind socket to address");
       return 1;
     }
-
-  printf("Bound server to server_port %d\n", server->port);
   // TODO change 10 to value in constants
   if (listen (sock, 10) < 0)
     {
@@ -90,15 +86,12 @@ TCP_HANDLER tcp_server_next_connection(TCP_SERVER server)
   struct sockaddr_in addr;
   int client_sock = sizeof (addr);
   socklen_t addr_len = client_sock;
-  printf("Server waiting for incoming connection on server_port %d\n", server->port);
   client_sock = accept (server->handler->sockfd, (struct sockaddr *)&addr, &addr_len);
-  printf("Server made new connection\n");
   if (client_sock < 0)
     {
       perror ("error accepting connection");
       return NULL;
     }
-  printf("Server made  connection to client on server_port %d\n", server->port);
   return new_tcp_handler (client_sock);
 }
 
@@ -129,9 +122,12 @@ TCP_CLIENT_CONN tcp_new_client(char *host_ip, unsigned short port)
 
 int tcp_client_connect(TCP_CLIENT_CONN client)
 {
-  // TODO check if new error handling needed
   int sock = socket (PF_INET, SOCK_STREAM, 0);
-
+  if (sock < 0)
+    {
+      perror ("Error creating tcp client connection socket");
+      return 1;
+    }
   struct sockaddr_in sin;
   unsigned short server_port = client->server_port;
   memset (&sin, 0, sizeof (sin));
@@ -178,14 +174,10 @@ int tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len)
 
 int tcp_sendn(TCP_HANDLER handler, char *buf, int buf_len)
 {
-  printf("Sending with size %d\n", buf_len);
   int total = 0;
   int remaining = buf_len;
-  printf("total: %d,  len: %d\n", total, buf_len);
   while (total < buf_len)
     {
-      printf("Sockfd in sendn %d\n", handler->sockfd);
-      printf("sending data %s\n", buf + total);
       int sent = send(handler->sockfd, buf + total, remaining, 0);
       if (sent < 0)
         {
@@ -194,9 +186,7 @@ int tcp_sendn(TCP_HANDLER handler, char *buf, int buf_len)
         }
       total += sent;
       remaining -= sent;
-      printf("total sent in sendn %d\n", total);
     }
-  printf("total: %d, buf_len: %d, total < buf_len: %d\n", total, buf_len, total < buf_len); 
   return 0;
 }
 
