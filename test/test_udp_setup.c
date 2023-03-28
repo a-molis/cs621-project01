@@ -41,7 +41,10 @@ void *run_client(void *inputs)
   UDP_CLIENT_CONN client = udp_new_client (server_args->ip_addr, port);
   server_args->started_client = udp_client_connect (client);
   printf("started client in thread %d\n", server_args->started_client);
-
+  if (udp_destroy_client (client))
+    {
+      printf ("Error Destroying client\n");
+    }
   return 0;
 }
 
@@ -49,6 +52,12 @@ int main()
 {
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
+  if (server_args == NULL)
+    {
+      printf ("Failed to allocate memory for server_args");
+      return 1;
+    }
+  memset (server_args, 0, sizeof (struct args));
   server_args->port =  "12055";
   server_args->ip_addr =  "127.0.0.1";
   server_args->input =  "hello";
