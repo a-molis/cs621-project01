@@ -28,6 +28,7 @@
 // TODO refactor to move raw logic to other file
 // TODO make sure single application does not seg fault if not run without root
 // TODO move all free error check functions in wrapper functions
+// TODO remove test/simple_client.c and test/simple_server.c
 
 
 int main(int argc, char *argv[])

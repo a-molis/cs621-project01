@@ -19,10 +19,8 @@ void *run_server(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short server_port = atoi (server_args->port);
-
   UDP_SERVER server = udp_new_server (server_port);
   server_args->started_server = udp_server_start (server);
-  printf("started server in thread %d\n", server_args->started_server);
   UDP_HANDLER client_handler = udp_server_next_connection (server);
   if (udp_server_destroy(server))
     printf ("Failed to destroy server handler");
@@ -35,8 +33,6 @@ void *run_server(void *inputs)
 void *run_client(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
-  printf ("Running test with server %s on server_port %s in thread\n", server_args->ip_addr, server_args->port);
-
   unsigned short port = atoi (server_args->port);
   UDP_CLIENT_CONN client = udp_new_client (server_args->ip_addr, port);
   server_args->started_client = udp_client_connect (client);
@@ -71,12 +67,8 @@ int main()
   pthread_join(client_thread, NULL);
   pthread_join(server_thread, NULL);
   int success = 1;
-  printf("started server in outside %d\n", server_args->started_server);
-  printf("started client in outside %d\n", server_args->started_client);
   if (!server_args->started_client || !server_args->started_server)
     success = 0;
-  printf ("Copying data input: %s output: %s\n", server_args->input, server_args->output);
   free(server_args);
-  printf("Success = %d\n", success);
   return success;
 }
