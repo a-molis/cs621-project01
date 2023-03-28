@@ -500,6 +500,12 @@ client_post_probe (CONFIG config)
   return 0;
 }
 
+void
+stop_thread (union sigval data)
+{
+  write (STDOUT_FILENO, "Timeouts\n", 9);
+}
+
 int
 compdetect_single (CONFIG config)
 {
@@ -556,6 +562,30 @@ compdetect_single (CONFIG config)
     }
   printf ("Sockfd after destroy udp client%d\n", sockfd);
   printf ("Trying to join thread\n");
+
+  timer_t id = 0;
+  struct sigevent sig;
+  struct itimerspec tspec;
+  tspec.it_value.tv_sec = 5;
+  tspec.it_interval.tv_sec = 1;
+  tspec.it_value.tv_nsec = 0;
+  tspec.it_interval.tv_nsec = 0;
+  sig.sigev_notify = SIGEV_THREAD;
+//  int five = 500;
+//  sig.sigev_value.sival_ptr = &five;
+  sig.sigev_notify_function = stop_thread;
+  if (timer_create (CLOCK_MONOTONIC, &sig, &id))
+    {
+      printf ("error creating timer");
+    }
+  if (timer_settime (id, 0, &tspec, NULL))
+    {
+      printf ("Error starting timer");
+    }
+    else
+      printf ("Started timer\n");
+
+
 //  pthread_kill(rst_listener_thread, SIGALRM);
   pthread_join(rst_listener_thread, NULL);
 //  pthread_kill(rst_listener_thread, SIGALRM);
