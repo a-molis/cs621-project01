@@ -7,8 +7,7 @@
 #include <unistd.h>
 #include "tcp_sock_handler.h"
 
-// TODO add free/destroy
-TCP_HANDLER new_tcp_handler(int sockfd) 
+TCP_HANDLER new_tcp_handler(int sockfd)
 {
   TCP_HANDLER handler = malloc(sizeof(struct TCP_SOCKET_HANDLER));
   if (handler == NULL)
@@ -32,7 +31,7 @@ int destroy_tcp_handler(TCP_HANDLER handler)
 
 TCP_SERVER tcp_new_server(int port)
 {
-  TCP_SERVER server = malloc (sizeof (struct TCP_SOCKET_HANDLER));
+  TCP_SERVER server = malloc (sizeof (struct TCP_SERVER_HANDLER));
   if (server == NULL)
     {
       perror ("Error allocating memory for server");
@@ -50,6 +49,7 @@ int tcp_server_start(TCP_SERVER server)
       perror ("Failed to create TCP socket for server");
       return 1;
     }
+
   TCP_HANDLER handler = new_tcp_handler (sock);
   if (handler == NULL)
     {
