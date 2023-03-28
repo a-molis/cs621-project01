@@ -3,7 +3,6 @@
 #include "comp_utils.h"
 #include "udp_sock_handler.h"
 
-// TODO make sure all sockets closed
 // TODO test with valgrind
 // TODO update random numbers for TCP send
 // TODO see if only errors with errno need to have perror
@@ -28,6 +27,7 @@
 // TODO error check if not run with sudo
 // TODO refactor to move raw logic to other file
 // TODO make sure single application does not seg fault if not run without root
+// TODO move all free error check functions in wrapper functions
 
 
 int main(int argc, char *argv[])

@@ -503,73 +503,65 @@ compdetect_single (CONFIG config)
   struct sockaddr_in tail_sockaddr_in;
   UDP_CLIENT_CONN udp_client;
   pthread_t rst_listener_thread;
-  struct rst_listener_args *args;
-  struct timeb *recv_times;
+  struct rst_listener_args *args = (struct rst_listener_args *) malloc (sizeof (struct rst_listener_args));
+  if (args == NULL)
+    {
+      perror ("Unable to malloc rst listener args");
+      return 1;
+    }
+  struct timeb *recv_times = (struct timeb *) malloc (sizeof (struct timeb) * RST_PACKET_TOTAL);
+  if (recv_times == NULL)
+    {
+      perror ("Unable to create recv_times array");
+      free (args);
+      return 1;
+    }
   int sockfd = -1;
-  printf ("Sockfd before raw setup %d\n", sockfd);
   if (setup_raw_socket_conns (config, &sin, &head_sockaddr_in, &tail_sockaddr_in, &udp_client, &sockfd))
     {
       perror ("Error setting up raw socket conns");
       return 1;
     }
-
-  printf ("Sockfd after raw setup %d\n", sockfd);
   if (start_rst_listener (&rst_listener_thread, args, config, recv_times, sockfd, &sin, &head_sockaddr_in))
     {
       perror("Failed to set up thread for receiving RST packets");
       if (udp_destroy_client (udp_client))
         printf ("Failed to destroy client");
-//      close (sockfd);
-//      free (args);
-//      free (recv_times);
+      close (sockfd);
+      free (args);
+      free (recv_times);
       return 1;
     }
-  printf ("thread pointer at start %lu", rst_listener_thread);
-
-  printf ("Sockfd after start listener %d\n", sockfd);
   if (send_single_train (config, sockfd, &sin, &head_sockaddr_in, &tail_sockaddr_in, udp_client))
     {
       perror ("Failed to send packet train for compdetect");
       if (udp_destroy_client (udp_client))
         printf ("Failed to destroy client");
-//      free (args);
-////      close (sockfd);
-//      free (recv_times);
+      free (args);
+      close (sockfd);
+      free (recv_times);
       return 1;
     }
-  printf ("Sockfd after send single train%d\n", sockfd);
   if (udp_destroy_client (udp_client))
     {
       perror("Failed to set up thread for receiving RST packets");
-//      free (args);
-//      free (recv_times);
-//      close (sockfd);
+      free (args);
+      free (recv_times);
+      close (sockfd);
       perror ("Failed to destroy upd client");
       return 1;
     }
-  printf ("Sockfd after destroy udp client%d\n", sockfd);
-
-  printf ("Trying to start timer\n");
   if (close_recv_thread(&rst_listener_thread))
     {
       perror ("Error closing thread for recv");
+      free (args);
+      close (sockfd);
+      free (recv_times);
       return 1;
-      //  free (args);
-////  close (sockfd);
-//  free (recv_times);
     }
-  printf ("Trying to join thread\n");
-  printf ("thread pointer before join %lu\n", rst_listener_thread);
-//  pthread_join (rst_listener_thread, NULL);
-
-//  pthread_kill(rst_listener_thread, SIGALRM);
-//  pthread_kill(rst_listener_thread, SIGALRM);
-  printf ("Sockfd after join%d\n", sockfd);
-  printf ("joined thread\n");
-  // TODO check why double free'd
-//  free (args);
-////  close (sockfd);
-//  free (recv_times);
+  free (args);
+  close (sockfd);
+  free (recv_times);
   return 0;
 }
 
@@ -869,20 +861,7 @@ start_rst_listener (
   sockaddr_in *sin,
   struct sockaddr_in *head_sockaddr_in)
 {
-  args = (struct rst_listener_args *) malloc (sizeof (struct rst_listener_args));
-  if (args == NULL)
-    {
-      perror ("Unable to malloc rst listener args");
 
-      return 1;
-    }
-  recv_times = (struct timeb *) malloc (sizeof (struct timeb) * RST_PACKET_TOTAL);
-  if (recv_times == NULL)
-    {
-      perror ("Unable to create recv_times array");
-//      free (args);
-      return 1;
-    }
   int count = 0;
   args->config = config;
   args->recv_times = recv_times;
@@ -897,11 +876,6 @@ start_rst_listener (
       perror ("Error creating RST recv thread");
       return 1;
     }
-//  pthread_sigmask (SIG_BLOCK, &set, NULL);
-//  sigset_t set;
-//  sigemptyset (&set);
-//  sigaddset (&set, SIGUSR1);
-//  pthread_sigmask (SIG_BLOCK, &set, NULL);
   return 0;
 }
 
