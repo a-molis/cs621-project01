@@ -518,6 +518,7 @@ compdetect_single (CONFIG config)
       perror ("Error setting up raw socket conns");
       return 1;
     }
+  sigset_t set;
 
   printf ("Sockfd after raw setup %d\n", sockfd);
   if (start_rst_listener (&rst_listener_thread, args, config, recv_times, sockfd, &sin, &head_sockaddr_in))
@@ -530,6 +531,8 @@ compdetect_single (CONFIG config)
 //      free (recv_times);
       return 1;
     }
+
+
   printf ("Sockfd after start listener %d\n", sockfd);
   if (send_single_train (config, sockfd, &sin, &head_sockaddr_in, &tail_sockaddr_in, udp_client))
     {
@@ -553,8 +556,9 @@ compdetect_single (CONFIG config)
     }
   printf ("Sockfd after destroy udp client%d\n", sockfd);
   printf ("Trying to join thread\n");
+//  pthread_kill(rst_listener_thread, SIGALRM);
   pthread_join(rst_listener_thread, NULL);
-
+//  pthread_kill(rst_listener_thread, SIGALRM);
   printf ("Sockfd after join%d\n", sockfd);
   printf ("joined thread\n");
   // TODO check why double free'd
@@ -685,15 +689,17 @@ send_single_train (
 void
 recv_rst (void *inputs)
 {
-
+  signal (SIGALRM, signal_handler);
   struct rst_listener_args *args = (struct rst_listener_args*) inputs;
   int sock = *args->sockfd;
+  printf ("args->sockfd inside thread%d\n", *args->sockfd);
   char buf[args->config->raw_packet_size];
   ssize_t received;
   uint16_t tcp_dest_head_syn_port = htons (args->config->tcp_dest_head_syn_port);
   uint16_t tcp_dest_tail_syn_port = htons (args->config->tcp_dest_tail_syn_port);
   int count = 0;
-
+//
+//  alarm (20);
   while (count < RST_PACKET_TOTAL)
     {
       char buf[args->config->raw_packet_size];
@@ -726,11 +732,11 @@ recv_rst (void *inputs)
           printf ("Received head!!\n");
           struct timeb recv_time;
           ftime(&recv_time);
-          if (count > 1)
+          if (*args->count > 1)
             *(args->recv_times + 2) = recv_time;
           else
             *(args->recv_times + 0) = recv_time;
-          count += 1;
+          *args->count += 1;
           printf ("Count inside loop head %d\n", count);
           printf ("head tcp->dest: %d, args->sin->sin_port: %d, tcp->source %d, tcp_dest_head_syn_port %d \n", ntohs(tcp->dest), ntohs(args->sin->sin_port), ntohs (tcp->source), ntohs (tcp_dest_head_syn_port));
           fflush( stdout );
@@ -741,11 +747,11 @@ recv_rst (void *inputs)
           printf ("Received tail!!\n");
           struct timeb recv_time;
           ftime(&recv_time);
-          if (count > 1)
+          if (*args->count  > 1)
             *(args->recv_times + 3) = recv_time;
           else
             *(args->recv_times + 1) = recv_time;
-          count += 1;
+          *args->count += 1;
           printf ("tail tcp->dest: %d, args->sin->sin_port: %d, tcp->source %d, tcp_dest_tail_syn_port %d \n", ntohs(tcp->dest), ntohs(args->sin->sin_port), ntohs (tcp->source), ntohs (tcp_dest_tail_syn_port));
           fflush( stdout );
         }
@@ -756,6 +762,7 @@ recv_rst (void *inputs)
   char addr[INET_ADDRSTRLEN];
   inet_ntop (AF_INET, &args->head_sockaddr_in->sin_addr.s_addr, addr, INET_ADDRSTRLEN);
   printf ("Server ip from head_sockaddr_in %s\n", addr);
+
 }
 
 void
@@ -825,13 +832,17 @@ start_rst_listener (
   args->sin = sin;
   args->head_sockaddr_in = head_sockaddr_in;
   printf ("Starting listener\n");
-
+  printf ("args->sockfd %d\n", *args->sockfd);
   if (pthread_create (rst_listener_thread, NULL, (void *) &recv_rst, (void *) args))
     {
       perror ("Error creating RST recv thread");
       return 1;
     }
-
+//  pthread_sigmask (SIG_BLOCK, &set, NULL);
+//  sigset_t set;
+//  sigemptyset (&set);
+//  sigaddset (&set, SIGUSR1);
+//  pthread_sigmask (SIG_BLOCK, &set, NULL);
   return 0;
 }
 
@@ -989,16 +1000,16 @@ create_raw_socket (int *sockfd, char *interface, CONFIG config)
       return 1;
     }
 
-  // TODO replace with alarm
-  struct timeval time;
-  time.tv_sec = 10;
-  time.tv_usec = 0;
-  if (setsockopt (*sockfd, SOL_SOCKET, SO_RCVTIMEO, &time, sizeof (time)) < 0)
-    {
-      perror ("Failed to set socket opt for raw socket for recv timeout");
-      close (*sockfd);
-      return 1;
-    }
+//  // TODO replace with alarm
+//  struct timeval time;
+//  time.tv_sec = 20;
+//  time.tv_usec = 0;
+//  if (setsockopt (*sockfd, SOL_SOCKET, SO_RCVTIMEO, &time, sizeof (time)) < 0)
+//    {
+//      perror ("Failed to set socket opt for raw socket for recv timeout");
+//      close (*sockfd);
+//      return 1;
+//    }
   struct ifreq ifr;
   memset (&ifr, 0, sizeof (struct ifreq));
   // TODO check if need error handling around strcpy
