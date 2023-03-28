@@ -510,6 +510,7 @@ void expired(union sigval timer_data);
 
 pid_t gettid(void);
 
+void foo (pthread_t rst_listener_thread);
 struct t_eventData{
     pthread_t rst_listener_thread;
 };
@@ -576,6 +577,20 @@ compdetect_single (CONFIG config)
   printf ("Sockfd after destroy udp client%d\n", sockfd);
   printf ("Trying to join thread\n");
 
+  foo (rst_listener_thread);
+
+
+  //  pthread_kill(rst_listener_thread, SIGALRM);
+  printf ("Sockfd after join%d\n", sockfd);
+  printf ("joined thread\n");
+  // TODO check why double free'd
+//  free (args);
+////  close (sockfd);
+//  free (recv_times);
+  return 0;
+}
+void foo (pthread_t rst_listener_thread)
+{
   int res = 0;
   timer_t timerId = 0;
 
@@ -604,7 +619,6 @@ compdetect_single (CONFIG config)
   /* create timer */
   res = timer_create(CLOCK_REALTIME, &sev, &timerId);
 
-
   if (res != 0){
       fprintf(stderr, "Error timer_create: %s\n", strerror(errno));
       exit(-1);
@@ -623,14 +637,6 @@ compdetect_single (CONFIG config)
 
 //  pthread_kill(rst_listener_thread, SIGALRM);
   pthread_join(rst_listener_thread, NULL);
-//  pthread_kill(rst_listener_thread, SIGALRM);
-  printf ("Sockfd after join%d\n", sockfd);
-  printf ("joined thread\n");
-  // TODO check why double free'd
-//  free (args);
-////  close (sockfd);
-//  free (recv_times);
-  return 0;
 }
 
 int
