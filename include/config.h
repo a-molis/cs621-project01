@@ -1,8 +1,12 @@
+/**
+ * Header file for config functions
+ */
 #include <stddef.h>
 
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+// Struct to store config json data.
 struct CONFIG_DATA
 {
     char server_ip[16];
@@ -21,6 +25,7 @@ struct CONFIG_DATA
     char recv_device[16];
 };
 
+// Renames a struct CONFIG_DATA pointer to CONFIG.
 typedef struct CONFIG_DATA *CONFIG;
 
 /**
@@ -32,7 +37,7 @@ CONFIG config_new (char *config_str);
 
 /**
  * Destroys/frees the config struct.
- * @param config The config struct.
+ * @param config The config struct to destroy.
  */
 void config_destroy(CONFIG config);
 
@@ -40,7 +45,7 @@ void config_destroy(CONFIG config);
  * Opens a file with a path and stores the file in the buf.
  * @param path The path to the file to read.
  * @param buf The buffer to store the opened_file.
- * @return returns 0 if there is no error 1 otherwise.
+ * @return Returns 0 if there is no error 1 otherwise.
  */
 int open_file (char *path, char *buf);
 

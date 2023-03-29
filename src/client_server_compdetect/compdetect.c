@@ -3,7 +3,6 @@
 #include "comp_utils.h"
 #include "udp_sock_handler.h"
 
-// TODO document in README
 // TODO test with valgrind
 // TODO update random numbers for TCP send
 // TODO see if only errors with errno need to have perrorg
@@ -39,6 +38,7 @@
 // TODO check what happens if requried arg not present.
 // TODO print invalid in part 1 if invalid results
 // TODO filter out any ARP messages in pcap files
+// TODO check if Upppercase names ok for struct names
 
 
 int main(int argc, char *argv[])

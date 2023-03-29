@@ -113,6 +113,7 @@ The config file has the following field's
 1. `client_ip` This is the IPv4 address of the client. 
 2. `raw_packet_size` This is the max size of a raw packet used for part 2.
 3. `recv_device` This is the network device name of the network card used in part 2 for setting promiscuous mode for the raw socket.
+4. `tcp_src_syn_port` This is the port used for the source port for sending the UDP packet train in part 2.
 
 ### Part 1
 Part 1 detects network compression using a server and a client model. 

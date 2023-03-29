@@ -1,21 +1,29 @@
+/**
+ * Header for TCP functions.
+ * This include wrappers for sockets and functions around sending and receiving data with TCP.
+ */
 #include <stddef.h>
 
 #ifndef TCP_SOCK_HANDLER_H_
 #define TCP_SOCK_HANDLER_H_
 
+// This is a struct that acts as a wrapper for a TCP socket.
 struct TCP_SOCKET_HANDLER 
 {
   int sockfd;
 };
 
+// Names a struct TCP_SOCKET_HANDLER pointer as TCP_HANDLER.
 typedef struct TCP_SOCKET_HANDLER *TCP_HANDLER;
 
+// This is a wrapper for a TCP server socket.
 struct TCP_SERVER_HANDLER
 {
   int port;
   TCP_HANDLER handler;
 };
 
+// This is a wrapper for a TCP socket used by a client.
 struct TCP_CLIENT_HANDLER
 {
     char *host_ip;
@@ -23,7 +31,10 @@ struct TCP_CLIENT_HANDLER
     TCP_HANDLER handler;
 };
 
+// Names a struct TCP_SERVER_HANDLER pointer as TCP_SERVER.
 typedef struct TCP_SERVER_HANDLER *TCP_SERVER;
+
+// Names a struct TCP_CLIENT_HANDLER pointer as TCP_CLIENT_CONN.
 typedef struct TCP_CLIENT_HANDLER *TCP_CLIENT_CONN;
 
 /**

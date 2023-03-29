@@ -12,7 +12,7 @@
  * Runs the client pre probe stage for part 1.
  * @param config The config struct.
  * @param config_str The string representation of the config to be sent to the server.
- * @return returns 0 if there is no error, 1 otherwise.
+ * @return Returns 0 if there is no error, 1 otherwise.
  */
 int client_pre_probe (CONFIG config, char *config_str);
 
@@ -26,7 +26,7 @@ CONFIG server_pre_probe (int port);
 /**
  * Runs the client probe stage for part 1.
  * @param config The config struct.
- * @return returns 0 if there is no error, 1 otherwise.
+ * @return Returns 0 if there is no error, 1 otherwise.
  */
 int client_probe(CONFIG config);
 
@@ -35,7 +35,7 @@ int client_probe(CONFIG config);
  * @param config The config struct.
  * @param result A string buffer to store the result information within.
  *               This data is then sent to client in post probe stage.
- * @return returns 0 if there is no error, 1 otherwise.
+ * @return Returns 0 if there is no error, 1 otherwise.
  */
 int server_probe (CONFIG config, char *result);
 
@@ -49,7 +49,7 @@ int server_probe (CONFIG config, char *result);
  * @param t The train_type, low for low entropy data, high for high entropy data.
  * @param result The buffer for the result stats.
  * @param mss The time it took from the first packet received to the last packet received.
- * @return returns 0 if there is no error, 1 otherwise.
+ * @return Returns 0 if there is no error, 1 otherwise.
  */
 int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t, char result[], double *mss);
 
@@ -57,21 +57,21 @@ int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t
  * Runs server post probe. The result from the recv_udp_train call is sent in this function to the client.
  * @param config The config struct.
  * @param result The buffer for the result stats and compression detection info.
- * @return returns 0 if there is no error, 1 otherwise.
+ * @return Returns 0 if there is no error, 1 otherwise.
  */
 int server_post_probe (CONFIG config, char *result);
 
 /**
  * Runs the client post probe stage to get the results back from the server.
  * @param config The config struct.
- * @return returns 0 if there is no error, 1 otherwise.
+ * @return Returns 0 if there is no error, 1 otherwise.
  */
 int client_post_probe (CONFIG config);
 
 /**
  * Runs compression detection for part 2.
  * @param config The config struct.
- * @return returns 0 if there is no error, 1 otherwise.
+ * @return Returns 0 if there is no error, 1 otherwise.
  */
 int compdetect_single (CONFIG config);
 
@@ -79,7 +79,7 @@ int compdetect_single (CONFIG config);
  * Runs compression detection by opening up the config json and turning the config json into a CONFIG.
  * Then compdetect_single is run to run compression detection.
  * @param config_path The path to the configuration json file.
- * @return returns 0 if there is no error, 1 otherwise.
+ * @return Returns 0 if there is no error, 1 otherwise.
  */
 int run_compdetect (char *config_path);
 
