@@ -31,6 +31,8 @@
 // TODO make sure single application does not seg fault if not run without root
 // TODO move all free error check functions in wrapper functions
 // TODO remove test/simple_client.c and test/simple_server.c
+// TODO check if using config->udp_source_port
+// TODO add error handling around close function calls
 
 
 int main(int argc, char *argv[])

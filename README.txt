@@ -13,3 +13,19 @@ recv_device
 
 
 This was tested on vm slices made by USFCA CS support. The VMs are running AlmaLinux 9.1 (Lime Lynx) x86_64.
+
+Building
+
+CONFIG
+
+Constants
+
+TCP_SOCK_HANDLER
+
+UDP_SOCK_HANDLER
+
+part 1
+
+part 2
+
+Testing

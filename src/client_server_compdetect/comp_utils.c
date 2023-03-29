@@ -34,11 +34,11 @@ int send_syn_packet (int sockfd, struct sockaddr_in *sout, char *packet);
 int create_raw_socket (int *sockfd, char *interface, CONFIG config);
 /**
  * This is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
- * @param buf The buffer to create the checksum2 with
+ * @param buf The buffer to create the checksum with
  * @param size The size of the buf
- * @return the checksum2
+ * @return the checksum
  */
-unsigned short checksum2(const char *buf, unsigned size);
+unsigned short checksum(const char *buf, unsigned size);
 
 struct rst_listener_args {
     int *count;
@@ -671,19 +671,16 @@ int
 setup_sockaddrs (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in)
 {
   memset (sin, 0, sizeof ((*sin)));
-  // TODO update to use inet_pton or check if inet_addr == -1
   sin->sin_addr.s_addr = inet_addr (config->client_ip);
   sin->sin_port = htons (config->tcp_src_syn_port);
   sin->sin_family = AF_INET;
 
   memset (head_sockaddr_in, 0, sizeof ((*head_sockaddr_in)));
-  // TODO update to use inet_pton or check if inet_addr == -1
   head_sockaddr_in->sin_addr.s_addr = inet_addr (config->server_ip);
   head_sockaddr_in->sin_port = htons (config->tcp_dest_head_syn_port);
   head_sockaddr_in->sin_family = AF_INET;
 
   memset (tail_sockaddr_in, 0, sizeof ((*tail_sockaddr_in)));
-  // TODO update to use inet_pton or check if inet_addr == -1
   tail_sockaddr_in->sin_addr.s_addr = inet_addr (config->server_ip);
   tail_sockaddr_in->sin_port = htons (config->tcp_dest_tail_syn_port);
   tail_sockaddr_in->sin_family = AF_INET;
@@ -748,30 +745,25 @@ recv_rst (void *inputs)
   signal (SIGALRM, signal_handler);
   struct rst_listener_args *args = (struct rst_listener_args*) inputs;
   int sock = *args->sockfd;
-  printf ("args->sockfd inside thread%d\n", *args->sockfd);
-  char buf[args->config->raw_packet_size];
+
   ssize_t received;
   uint16_t tcp_dest_head_syn_port = htons (args->config->tcp_dest_head_syn_port);
   uint16_t tcp_dest_tail_syn_port = htons (args->config->tcp_dest_tail_syn_port);
   int count = 0;
-//
-//  alarm (20);
   while (count < RST_PACKET_TOTAL)
     {
       char buf[args->config->raw_packet_size];
-      // TODO add threshold/timeout to account for lost packet
+      memset (buf, 0, args->config->raw_packet_size);
       received = recvfrom (sock, buf, args->config->raw_packet_size, 0, NULL, NULL);
       if (received == 0)
         {
           printf ("connection closed\n");
           break;
         }
-
       else if (received < 0)
         {
           printf ("Errno from invalid recv %d sockfd: %d, pointer %p\n", errno, *args->sockfd, args->sockfd);
           break;
-//          continue;
         }
       else if (received == EINTR)
         {
@@ -785,7 +777,6 @@ recv_rst (void *inputs)
       struct tcphdr *tcp = (struct tcphdr *) (buf + (ip->ihl * 4));
       if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_head_syn_port && tcp->rst)
         {
-          printf ("Received head!!\n");
           struct timeb recv_time;
           ftime(&recv_time);
           if (count > 1)
@@ -793,13 +784,10 @@ recv_rst (void *inputs)
           else
             *(args->recv_times + 0) = recv_time;
           count += 1;
-          printf ("head tcp->dest: %d, args->sin->sin_port: %d, tcp->source %d, tcp_dest_head_syn_port %d \n", ntohs(tcp->dest), ntohs(args->sin->sin_port), ntohs (tcp->source), ntohs (tcp_dest_head_syn_port));
-          fflush( stdout );
         }
 
       else if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_tail_syn_port && tcp->rst)
         {
-          printf ("Received tail!!\n");
           struct timeb recv_time;
           ftime(&recv_time);
           if (count  > 1)
@@ -807,39 +795,29 @@ recv_rst (void *inputs)
           else
             *(args->recv_times + 1) = recv_time;
           count += 1;
-          printf ("tail tcp->dest: %d, args->sin->sin_port: %d, tcp->source %d, tcp_dest_tail_syn_port %d \n", ntohs(tcp->dest), ntohs(args->sin->sin_port), ntohs (tcp->source), ntohs (tcp_dest_tail_syn_port));
-          fflush( stdout );
         }
-      fflush( stdout );
     }
-  printf ("Completed loop");
   print_results (args->recv_times, RST_PACKET_TOTAL);
-  printf("\n");
+  printf ("\n");
   char addr[INET_ADDRSTRLEN];
   inet_ntop (AF_INET, &args->head_sockaddr_in->sin_addr.s_addr, addr, INET_ADDRSTRLEN);
-  printf ("Server ip from head_sockaddr_in %s\n", addr);
-
 }
 
 void
 print_results (struct timeb *recv_times, const int rst_count)
 {
   printf ("results:  \n");
-  bool failed = false;
   for (int i = 0; i < rst_count; i++)
     {
       struct timeb current_time = *(recv_times + i);
       if (current_time.millitm == 0)
         {
           printf ("Failed to detect due to insufficient information\n");
-          failed = true;
-          printf ("Missing data for index %d\n", i);
+          return;
         }
       else
         printf ("Found data for index %d with %d\n", i, current_time.millitm);
     }
-  if (failed)
-    return;
   double low_entropy_duration = compute_time_diff(*recv_times, *(recv_times + 1));
   double high_entropy_duration = compute_time_diff(*(recv_times + 2), *(recv_times + 3));
   printf("Time between low entropy packets %.f mss and between high entropy packets %.f mss\n",
@@ -874,8 +852,6 @@ start_rst_listener (
   args->count = &count;
   args->sin = sin;
   args->head_sockaddr_in = head_sockaddr_in;
-  printf ("Starting listener\n");
-  printf ("args->sockfd %d\n", *args->sockfd);
   if (pthread_create (rst_listener_thread, NULL, (void *) &recv_rst, (void *) args))
     {
       perror ("Error creating RST recv thread");
@@ -907,7 +883,6 @@ send_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockadd
       return 1;
     }
   free (packet);
-  printf ("Sent SYN packet to server at %s on port %d\n", config->server_ip, config->tcp_dest_head_syn_port);
   return 0;
 }
 
@@ -971,21 +946,19 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
     }
   memcpy (pseudo_packet, (void *) &tcp_pseudo_header, sizeof (struct pseudo_header));
   memcpy (pseudo_packet + sizeof (struct pseudo_header), (void *) tcp, sizeof (struct tcphdr));
-  tcp->check = checksum2 ((const char *) pseudo_packet, pseudo_size);
-  ip->check = checksum2 (packet, ip->tot_len);
+  tcp->check = checksum ((const char *) pseudo_packet, pseudo_size);
+  ip->check = checksum (packet, ip->tot_len);
   free (pseudo_packet);
   return 0;
 }
 
-// TODO verify checksum in wireshark
-// TODO change from checksum2 to checksum
 // This function is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
 unsigned short
-checksum2(const char *buf, unsigned size)
+checksum(const char *buf, unsigned size)
 {
   unsigned sum = 0, i;
 
-  /* Accumulate checksum2 */
+  /* Accumulate checksum */
   for (i = 0; i < size - 1; i += 2)
     {
       unsigned short word16 = *(unsigned short *) &buf[i];

@@ -145,7 +145,7 @@ int open_file (char *path, char *buf)
   if (fclose (fd))
     {
       perror ("Unable to close file");
-      abort ();
+      return 1;
     }
   return 0;
 }

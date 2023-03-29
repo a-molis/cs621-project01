@@ -138,7 +138,6 @@ int udp_client_connect(UDP_CLIENT_CONN client)
       perror ("Couldn’t create UDP socket");
       return 1;
     }
-  // TODO verify DF bit set correctly with tcpdump
   int optval = IP_PMTUDISC_DO;
   if (setsockopt (sock, IPPROTO_IP, IP_MTU_DISCOVER, &optval,
                   sizeof (optval)) < 0)
@@ -157,7 +156,6 @@ int udp_client_connect(UDP_CLIENT_CONN client)
       return 1;
     }
   memset (sin, 0, sizeof (*sin));
-  // TODO update to use inet_pton or check if -1
   sin->sin_addr.s_addr = inet_addr(client->ip_address);
   sin->sin_port = htons (client->port);
   sin->sin_family = AF_INET;
