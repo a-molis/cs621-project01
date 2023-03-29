@@ -497,7 +497,6 @@ client_post_probe (CONFIG config)
 int
 compdetect_single (CONFIG config)
 {
-  printf("Starting client pre probe on ip %s on port %d\n", config->server_ip, config->udp_dest_port);
   struct sockaddr_in sin;
   struct sockaddr_in head_sockaddr_in;
   struct sockaddr_in tail_sockaddr_in;
@@ -691,7 +690,6 @@ send_single_train (
   struct sockaddr_in *tail_sockaddr_in,
   UDP_CLIENT_CONN udp_client)
 {
-  printf ("raw_packet_size: %d\n", config->raw_packet_size);
   if (send_tcp_syn (config, sockfd, sin, head_sockaddr_in))
     {
       perror ("Failed to send_tcp_syn packet");
@@ -864,7 +862,6 @@ send_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockadd
       perror ("Error allocating packet with malloc");
       return 1;
     }
-  printf ("head_sockaddr_in addr %d\n", sout->sin_addr.s_addr);
   if (new_syn_packet (sin, sout, packet, config->raw_packet_size, 1))
     {
       perror ("Error creating syn packet");
