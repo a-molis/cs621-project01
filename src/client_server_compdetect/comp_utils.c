@@ -808,8 +808,6 @@ print_results (struct timeb *recv_times, const int rst_count)
           printf ("Failed to detect due to insufficient information\n");
           return;
         }
-      else
-        printf ("Found data for index %d with %d\n", i, current_time.millitm);
     }
   double low_entropy_duration = compute_time_diff(*recv_times, *(recv_times + 1));
   double high_entropy_duration = compute_time_diff(*(recv_times + 2), *(recv_times + 3));
@@ -998,35 +996,23 @@ create_raw_socket (int *sockfd, char *interface, CONFIG config)
   const int *val = &one;
   if (setsockopt (*sockfd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
     {
-//      close (*sockfd);
+      close (*sockfd);
       perror ("Failed to set socket opt for raw socket");
       return 1;
     }
-
-//  // TODO replace with alarm
-//  struct timeval time;
-//  time.tv_sec = 20;
-//  time.tv_usec = 0;
-//  if (setsockopt (*sockfd, SOL_SOCKET, SO_RCVTIMEO, &time, sizeof (time)) < 0)
-//    {
-//      perror ("Failed to set socket opt for raw socket for recv timeout");
-//      close (*sockfd);
-//      return 1;
-//    }
   struct ifreq ifr;
   memset (&ifr, 0, sizeof (struct ifreq));
-  // TODO check if need error handling around strcpy
   strcpy (ifr.ifr_ifrn.ifrn_name, interface);
   if (ioctl (*sockfd, SIOCGIFFLAGS, &ifr) == -1)
     {
-//      close (*sockfd);
+      close (*sockfd);
       perror ("Unable to get flags for network interface");
       return 1;
     }
   ifr.ifr_ifru.ifru_flags |= IFF_PROMISC;
   if (ioctl (*sockfd, SIOCGIFFLAGS, &ifr) == -1)
     {
-//      close (*sockfd);
+      close (*sockfd);
       perror ("Unable to set network interface to promiscuous mode");
       return 1;
     }

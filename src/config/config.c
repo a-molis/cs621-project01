@@ -57,7 +57,6 @@ int parse_required_params (CONFIG config, const cJSON *json)
       perror ("Missing required config parameter");
       return 1;
     }
-  // TODO add error check if value string present and that atoi works
   strcpy (config->server_ip, server_ip->valuestring);
   config->udp_source_port = udp_source_port->valueint;
   config->udp_dest_port = udp_dest_port->valueint;

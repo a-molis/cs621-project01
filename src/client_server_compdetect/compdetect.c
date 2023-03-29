@@ -34,6 +34,9 @@
 // TODO check if using config->udp_source_port
 // TODO add error handling around close function calls
 // TODO explain makefile in readme
+// TODO check if udp_dest_port and udp_src_port should be different
+// TODO check what happens when client runs without server or args
+// TODO check what happens if requried arg not present.
 
 
 int main(int argc, char *argv[])

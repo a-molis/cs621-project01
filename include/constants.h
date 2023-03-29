@@ -11,7 +11,6 @@ static const int UDP_PACKET_TTL = 255;
 static const int UPP_TIMEOUT = 5;
 static const int RAW_PACKET_SIZE = 4096;
 static const int TCP_SRC_SYN_PORT = 12059;
-static const int PCAP_TIMEOUT = 4000;
 static const int RST_PACKET_TOTAL = 4;
 static const int THRESHOLD = 100;
 static const char *DEFAULT_DEVICE = "enp1s0";
