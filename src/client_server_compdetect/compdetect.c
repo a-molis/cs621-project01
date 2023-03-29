@@ -3,10 +3,10 @@
 #include "comp_utils.h"
 #include "udp_sock_handler.h"
 
+// TODO document in README
 // TODO test with valgrind
 // TODO update random numbers for TCP send
-// TODO see if only errors with errno need to have perror
-// TODO document in README
+// TODO see if only errors with errno need to have perrorg
 // TODO update times in the client server code or setup with thread
 // TODO create pcap files
 // TODO move binaries built to /bin
@@ -33,6 +33,7 @@
 // TODO remove test/simple_client.c and test/simple_server.c
 // TODO check if using config->udp_source_port
 // TODO add error handling around close function calls
+// TODO explain makefile in readme
 
 
 int main(int argc, char *argv[])
