@@ -9,13 +9,11 @@
 #include <signal.h>
 #include <errno.h>
 #include <arpa/inet.h>
-#include <sys/time.h>
 #include <linux/tcp.h>
 #include <linux/ip.h>
 #include <linux/if.h>
 #include <pthread.h>
 #include <sys/ioctl.h>
-#include <stdbool.h>
 #include "comp_utils.h"
 #include "config.h"
 #include "constants.h"

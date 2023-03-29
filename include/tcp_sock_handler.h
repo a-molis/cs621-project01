@@ -1,7 +1,3 @@
-/**
- * Header file for tcp_sock_handler functions.
- * These functions are set up as a framework for setting up TCP connections and sending/receiving data with TCP.
- */
 #include <stddef.h>
 
 #ifndef TCP_SOCK_HANDLER_H_
