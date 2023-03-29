@@ -28,7 +28,6 @@ The full documentation on how to use all of these functions are located in `incl
 Tests were written while developing the project. Each major feature was built out then tested starting with simple tests for the connection framework. 
 As the building blocks of the project were factored system tests were developed alongside the code for part 1 and 2.
 
-
 The more comprehensive tests like `test/test_part_one` are designed around testing that part 1 works holistically.
 Threads are used to simulate different machines. A server and client are spun up in each thread and the code for part 1 is then run.
 
@@ -128,6 +127,9 @@ This port number should match the `tcp_probing_port` in the config.
 
 To start the client run `src/client_server_compdetect/compdetect_client myconfig.json` ran at the root of the project code. 
 Then wait for the results to display on the client. 
+
+#### Part 1 and 2 Code
+The business logic code for part 1 and 2 are found in `src/client_server_compdetect/comp_utils.c`. With the public functions documented in `include/comp_utils.h`.
 
 ### Part 2
 Part 2 detects network compression using a client. A server must be running but does not need to have any specific program running associated with this project. 
