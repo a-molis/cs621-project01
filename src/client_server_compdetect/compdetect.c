@@ -9,6 +9,8 @@
 // TODO document in README
 // TODO update times in the client server code or setup with thread
 // TODO create pcap files
+// TODO move binaries built to /bin
+// TODO remove random sleeps
 // TODO check rubric and project outline to verify all done
 // TODO verify if do not fragment bit set correctly
 // TODO add comments to all functions

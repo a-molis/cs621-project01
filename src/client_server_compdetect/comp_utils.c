@@ -132,9 +132,14 @@ CONFIG server_pre_probe (int port)
     }
   buf[buf_len] = '\0';
 
-  if (destroy_tcp_sever (server) | destroy_tcp_handler (client_handler))
+  if (destroy_tcp_sever (server))
     {
       perror ("Server failed to close tcp conn in pre probe");
+      abort ();
+    }
+  if (destroy_tcp_handler (client_handler))
+    {
+      perror ("Server failed to close client_handler in pre probe");
       abort ();
     }
   CONFIG config = config_new (buf);

@@ -148,7 +148,8 @@ int destroy_tcp_client(TCP_CLIENT_CONN client)
 {
   if (client)
     {
-      destroy_tcp_handler (client->handler);
+      if (client->handler)
+        destroy_tcp_handler (client->handler);
       free(client);
     }
   return 0;

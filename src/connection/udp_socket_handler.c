@@ -22,9 +22,7 @@ UDP_HANDLER udp_new_handler(int sockfd)
       perror ("Unable to allocate memory for new UDP handler");
       return NULL;
     }
-  printf("sock_fd at  new %d\n", sockfd);
   handler->sockfd = sockfd;
-  printf("sock_fd at assignment %d\n", handler->sockfd);
   return handler;
 }
 
@@ -57,6 +55,7 @@ int udp_server_destroy(UDP_SERVER server)
 {
   if (server)
     {
+      close (server->sockfd);
       if (server->addr)
         free(server->addr);
       free(server);
@@ -80,23 +79,19 @@ int udp_server_start(UDP_SERVER server)
       perror ("Could not resuse address");
       abort ();
     }
-  printf("Set up server socket\n");
   struct sockaddr_in *sin = malloc (sizeof (struct sockaddr_in));
   memset (sin, 0, sizeof (*sin));
   sin->sin_addr.s_addr = INADDR_ANY;
   sin->sin_port = htons (server->port);
   sin->sin_family = AF_INET;
-
   server->addr = sin;
   server->addr_len =  sizeof (*sin);
 
-  printf("Binding server to server_port %d\n", server->port);
   if (bind (sock, (struct sockaddr *) sin, sizeof (*sin)) < 0)
     {
       perror ("cannot bind socket to address");
       return 1;
     }
-  printf("Bound server to server_port %d\n", server->port);
 
   return 0;
 }
@@ -143,7 +138,6 @@ int udp_client_connect(UDP_CLIENT_CONN client)
       perror ("Couldn’t create UDP socket");
       return 1;
     }
-  printf ("set up client socket\n");
   // TODO verify DF bit set correctly with tcpdump
   int optval = IP_PMTUDISC_DO;
   if (setsockopt (sock, IPPROTO_IP, IP_MTU_DISCOVER, &optval,
@@ -266,7 +260,6 @@ int udp_recvfrom(UDP_HANDLER handler, char *buf, int *output_len)
                     | (num_buf[3] << 0);
   int size = ntohl (len_nb);
 
-  *buf = malloc (sizeof(char) * size);
   int received = udp_recvfrom_n (handler, buf, size);
   if (received)
     {

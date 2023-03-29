@@ -33,6 +33,7 @@ void *run_server(void *inputs)
   char test[MAX_UDP_SIZE];
   int output_len = 0;
   int success = udp_recvfrom (client_handler, test, &output_len);
+  test[output_len] = '\0';
   if (success)
     printf("Sever failed to receive test data from client\n");
   strcpy (server_args->output, test);
@@ -47,17 +48,15 @@ void *run_server(void *inputs)
 void *run_client(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
-  printf ("Running test with server %s on server_port %s in thread\n", server_args->ip_addr, server_args->port);
-
   unsigned short port = atoi (server_args->port);
   UDP_CLIENT_CONN client = udp_new_client (server_args->ip_addr, port);
   server_args->started_client = udp_client_connect (client);
-  printf("started client in thread %d\n", server_args->started_client);
-
   int sent_success = udp_sendto (client->handler,
                                  server_args->input, server_args->input_len);
   if (sent_success)
     printf("Failed to send test data from server to client\n");
+  if (udp_destroy_client (client))
+    printf ("Error destroying client\n");
   return 0;
 }
 

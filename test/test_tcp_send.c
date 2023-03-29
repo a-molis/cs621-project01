@@ -55,9 +55,9 @@ void *run_client(void *inputs)
   memset (test, '\0', sizeof (MAX_TCP_SIZE));
   int received = tcp_recv (client->handler, test, &output_len);
   if (received)
-    printf("Client failed to receive message from server from server %s\n", test);
-  else
-    printf("Client received message from server: %s\n", test);
+    {
+      printf ("Error receiving data\n");
+    }
   if (destroy_tcp_client (client))
     printf("Failed to destroy client socket handler\n");
   strcpy (server_args->output, test);
