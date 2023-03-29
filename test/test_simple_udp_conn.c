@@ -30,7 +30,7 @@ void *run_server(void *inputs)
     {
       printf("Server failed to get next udp conn");
     }
-  char test[MAX_UDP_SIZE];
+  char test[1000];
   int output_len = 0;
   int success = udp_recvfrom (client_handler, test, &output_len);
   test[output_len] = '\0';

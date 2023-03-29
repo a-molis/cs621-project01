@@ -1,9 +1,14 @@
-
+/**
+ * Constants file for storing constants and defaults for the CONFIG.
+ */
 
 #ifndef _CONSTANTS_H_
 #define _CONSTANTS_H_
+
+// The max TCP size data size for the project.
 static const int MAX_TCP_SIZE = 1024;
-static const int MAX_UDP_SIZE = 1000;
+
+// Default value for udp_payload_size in the config json.
 static const int UDP_PAYLOAD_SIZE = 1000;
 static const int INTER_MEASURE_TIME = 15;
 static const int UDP_PACKET_TRAIN_LEN = 6000;
