@@ -219,7 +219,6 @@ int udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len)
 
 int udp_sendto(UDP_HANDLER handler, char *buf, int buf_len)
 {
-  printf("Sending data with udp_sendto\n");
   char num_buf[4];
   uint32_t len_nb = htonl(buf_len);
   num_buf[3] = (len_nb >> 0) & 0xFF;

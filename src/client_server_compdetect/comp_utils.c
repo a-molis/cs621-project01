@@ -359,7 +359,6 @@ int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t
 
 int recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t, char result[], double *mss)
 {
-  printf ("Server starting low entropy receive\n");
   char buf[config->udp_payload_size];
   struct timeb recv_times[config->udp_packet_train_len];
   bzero (recv_times, sizeof (struct timeb) * config->udp_packet_train_len);
@@ -430,7 +429,6 @@ process_train (CONFIG config, struct timeb recv_times[], double *mss, char resul
 int
 server_post_probe (CONFIG config, char *result)
 {
-  printf("starting server post-probe stage\n");
   TCP_SERVER server = tcp_new_server (config->tcp_probing_port);
   if (server == NULL)
     {
@@ -444,7 +442,6 @@ server_post_probe (CONFIG config, char *result)
       perror ("Unable to start server in pre probe");
       return 1;
     }
-  printf("TCP server started in server post-probe stage\n");
   TCP_HANDLER client_handler = tcp_server_next_connection (server);
   if (client_handler == NULL)
     {
@@ -645,7 +642,7 @@ setup_raw_socket_conns (
   if (setsockopt (sock, IPPROTO_IP, IP_TTL, &ttl, sizeof (ttl)) < 0)
     {
       perror ("Failed to set socket option for UDP TTL");
-      if (udp_destroy_client (udp_client))
+      if (udp_destroy_client (*udp_client))
         printf ("Failed to destroy client");
       return 1;
     }

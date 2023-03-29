@@ -36,7 +36,6 @@ void *run_client(void *inputs)
   unsigned short port = atoi (server_args->port);
   UDP_CLIENT_CONN client = udp_new_client (server_args->ip_addr, port);
   server_args->started_client = udp_client_connect (client);
-  printf("started client in thread %d\n", server_args->started_client);
   if (udp_destroy_client (client))
     {
       printf ("Error Destroying client\n");

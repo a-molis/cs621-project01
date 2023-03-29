@@ -62,6 +62,5 @@ int main() {
   if (!*server_args->client_status && !*server_args->server_status)
     success = 0;
   free(server_args);
-  printf("Success = %d\n", success);
   return success;
 }

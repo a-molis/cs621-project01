@@ -79,8 +79,6 @@ int main() {
   if (server_args->started_client || server_args->started_server ||
   (strcmp(server_args->input, server_args->output) != 0))
     success = 1;
-  printf ("Copying data input: %s output: %s\n", server_args->input, server_args->output);
   free(server_args);
-  printf("Success = %d\n", success);
   return success;
 }

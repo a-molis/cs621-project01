@@ -24,7 +24,6 @@ void *run_server(void *inputs)
   struct args *server_args = (struct args*) inputs;
   unsigned short server_port = atoi (server_args->port);
   CONFIG config = server_pre_probe (server_port);
-  printf ("config tcp_dest_tail_syn_port %d\n", server_args->tcp_dest_tail_syn_port);
   if (config == NULL)
     {
       printf ("Server failed in pre probe stage\n");
@@ -45,7 +44,6 @@ void *run_server(void *inputs)
       printf ("Server failed to send post probe\n");
       *server_args->server_status = 1;
     }
-  printf("server status %d\n", *server_args->server_status);
   config_destroy (config);
   return 0;
 }
@@ -56,7 +54,6 @@ void *run_client(void *inputs)
 
   char buf[MAX_TCP_SIZE];
   CONFIG config = get_config (server_args->config_path, buf);
-  printf ("config server ip %s\n", config->server_ip);
 
   int pre_probe = client_pre_probe (config, buf);
   if (pre_probe)
@@ -107,6 +104,5 @@ int main() {
   if (!*server_args->client_status && !*server_args->server_status)
     success = 0;
   free(server_args);
-  printf("Success = %d\n", success);
   return success;
 }
