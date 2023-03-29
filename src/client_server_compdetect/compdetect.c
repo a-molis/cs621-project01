@@ -38,6 +38,7 @@
 // TODO check what happens when client runs without server or args
 // TODO check what happens if requried arg not present.
 // TODO print invalid in part 1 if invalid results
+// TODO filter out any ARP messages in pcap files
 
 
 int main(int argc, char *argv[])
