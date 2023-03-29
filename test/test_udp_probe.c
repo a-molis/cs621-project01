@@ -1,7 +1,6 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 #include "udp_sock_handler.h"
 #include "constants.h"
@@ -16,22 +15,13 @@ struct args {
     int tcp_dest_tail_syn_port;
 };
 
-// TODO update to test probe not just set up
 void *run_server(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short server_port = atoi (server_args->port);
   CONFIG config = server_pre_probe (server_port);
-  printf ("config tcp_dest_tail_syn_port %d\n", server_args->tcp_dest_tail_syn_port);
-
-  printf("servver status in thread %d\n", *server_args->server_status);
-  printf("config->tcp_dest_tail_syn_port %d\n", config->tcp_dest_tail_syn_port);
-  printf("server_args->tcp_dest_tail_syn_port %d\n", server_args->tcp_dest_tail_syn_port);
-  printf("eq %d\n", config->tcp_dest_tail_syn_port == server_args->tcp_dest_tail_syn_port);
   int status = !(config->tcp_dest_tail_syn_port == server_args->tcp_dest_tail_syn_port);
   *server_args->server_status = status;
-  printf("server status %d\n", *server_args->server_status);
-  printf("status %d\n", status);
   config_destroy (config);
   return 0;
 }
@@ -39,15 +29,11 @@ void *run_server(void *inputs)
 void *run_client(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
-
   char buf[MAX_TCP_SIZE];
   CONFIG config = get_config (server_args->config_path, buf);
-  printf ("config server ip %s\n", config->server_ip);
-
   int pre_probe = client_pre_probe (config, buf);
   if (pre_probe)
     printf ("Client failed to pre probe server");
-  printf("client pre_probe %d\n", pre_probe);
   *server_args->client_status = pre_probe;
   config_destroy(config);
 
@@ -75,6 +61,5 @@ int main() {
   if (!*server_args->client_status && !*server_args->server_status)
     success = 0;
   free(server_args);
-  printf("Success = %d\n", success);
   return success;
 }
