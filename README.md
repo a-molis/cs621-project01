@@ -1,4 +1,5 @@
 # Compression Detection
+Developed by Andrew Molis
 
 ## Build
 The project is written in C with make as the build system. To build the project simply run `make`. 
@@ -145,3 +146,7 @@ The random file contains data to be used for sending high entropy data.
 ## Pcap files
 The pcap files are located at `tcpdumps/`. Part 1 client and server pcaps are located at `tcpdumps/part1-client.pcap` and `part1-server.pcap`.
 The part 2 pcap files is located at `tcpdumps/part2-compdetect.pcap`.
+
+
+## Project Completion
+All parts of the project are complete.
