@@ -29,9 +29,10 @@
  * @param udp_client The UDP_CLIENT_CONN used to send the data.
  * @param config The config json data.
  * @param buf The buffer containing the data to send.
+ * @param train_type The train_type either high or low for low or high entropy data.
  * @return Returns 0 if there is no error 1 otherwise.
  */
-int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, char *buf);
+int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf);
 
 /**
  * Gets high entropy data to fill send in the high entropy packet train.
@@ -70,6 +71,7 @@ unsigned short checksum(const char *buf, unsigned size);
 // Struct for the RST receiver thread arguments.
 struct rst_listener_args
 {
+    int *count;
     struct timeb *recv_times;
     int *sockfd;
     CONFIG config;
@@ -87,15 +89,11 @@ struct rst_listener_args
  *                   This has a length of RST_PACKET_TOTAL in the constants.h
  * @param sockfd The raw TCP socket to listen for the RST packets.
  * @param sin The struct sockaddr_in for the listeners machine.
+ * @param head_sockaddr_in The struct sockaddr_in for the tcp head port/host
  * @return Returns 0 if the listener was set up without errors, 1 otherwise.
  */
-int start_rst_listener (
-  pthread_t *rst_listener_thread,
-  struct rst_listener_args *args,
-  CONFIG config,
-  struct timeb *recv_times,
-  int sockfd, struct
-  sockaddr_in *sin);
+int start_rst_listener (pthread_t *rst_listener_thread, struct rst_listener_args *args, CONFIG config, struct timeb *recv_times, int sockfd,
+  struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in);
 void print_results (struct timeb *recv_times, const int rst_count);
 
 /**
@@ -214,7 +212,7 @@ int client_probe(CONFIG config)
     }
   char buf[config->udp_payload_size];
   bzero (buf, config->udp_payload_size);
-  if (send_udp_train (udp_client, config, buf))
+  if (send_udp_train (udp_client, config, low, buf))
     {
       if (udp_destroy_client (udp_client))
         {
@@ -234,7 +232,7 @@ int client_probe(CONFIG config)
       perror ("Unable to open high entropy data");
       return 1;
     }
-  if (send_udp_train (udp_client, config, high_data))
+  if (send_udp_train (udp_client, config, high, high_data))
     {
       if (udp_destroy_client (udp_client))
         {
@@ -388,7 +386,7 @@ get_packet_id (char *buf, uint16_t *num)
   *num = (buf[0] & 0xFF) << 8 | (buf[1] & 0xFF);
 }
 
-int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, char *buf)
+int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf)
 {
   // TODO remove sleep
   sleep(1);
@@ -567,7 +565,7 @@ compdetect_single (CONFIG config)
       perror ("Error setting up raw socket conns");
       return 1;
     }
-  if (start_rst_listener (&rst_listener_thread, args, config, recv_times, sockfd, &sin))
+  if (start_rst_listener (&rst_listener_thread, args, config, recv_times, sockfd, &sin, &head_sockaddr_in))
     {
       perror("Failed to set up thread for receiving RST packets");
       if (udp_destroy_client (udp_client))
@@ -743,7 +741,7 @@ send_single_train (
     }
   char buf[config->udp_payload_size];
   bzero (buf, config->udp_payload_size);
-  if (send_udp_train (udp_client, config, buf))
+  if (send_udp_train (udp_client, config, low, buf))
     {
       perror ("Client failed to send low entropy data");
       return 1;
@@ -765,7 +763,7 @@ send_single_train (
       perror ("Unable to open high entropy data");
       return 1;
     }
-  if (send_udp_train (udp_client, config, high_data))
+  if (send_udp_train (udp_client, config, high, high_data))
     {
       perror ("Client failed to send low entropy data");
       return 1;
@@ -876,12 +874,16 @@ start_rst_listener (
   CONFIG config,
   struct timeb *recv_times,
   int sockfd, struct
-  sockaddr_in *sin)
+  sockaddr_in *sin,
+  struct sockaddr_in *head_sockaddr_in)
 {
+  int count = 0;
   args->config = config;
   args->recv_times = recv_times;
   args->sockfd = &sockfd;
+  args->count = &count;
   args->sin = sin;
+  args->head_sockaddr_in = head_sockaddr_in;
   if (pthread_create (rst_listener_thread, NULL, (void *) &recv_rst, (void *) args))
     {
       perror ("Error creating RST recv thread");
