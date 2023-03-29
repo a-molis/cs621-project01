@@ -29,7 +29,7 @@ CONFIG config_new (char *config_str)
       return NULL;
     }
   parse_optional_params (config, json);
-  cJSON_free(json);
+  cJSON_Delete(json);
   return config;
 }
 
