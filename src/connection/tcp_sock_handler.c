@@ -119,7 +119,7 @@ TCP_CLIENT_CONN tcp_new_client(char *host_ip, unsigned short port)
   return client;
 }
 
-int ztcp_client_connect(TCP_CLIENT_CONN client)
+int tcp_client_connect(TCP_CLIENT_CONN client)
 {
   int sock = socket (PF_INET, SOCK_STREAM, 0);
   if (sock < 0)
