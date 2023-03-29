@@ -1,3 +1,6 @@
+/**
+ * Functions for part 1 and 2 business logic
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,7 +32,7 @@
  * @param udp_client The UDP_CLIENT_CONN used to send the data.
  * @param config The config json data.
  * @param buf The buffer containing the data to send.
- * @param train_type The train_type either high or low for low or high entropy data.
+ * @param t The train_type either high or low for low or high entropy data.
  * @return Returns 0 if there is no error 1 otherwise.
  */
 int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf);
@@ -104,16 +107,105 @@ void print_results (struct timeb *recv_times, const int rst_count);
  */
 double compute_time_diff (struct timeb time_1, struct timeb time_2);
 
-int
-get_low_entropy_data (UDP_HANDLER client_handler, CONFIG config, enum train_type type, char *result, double *low_entropy_duration);
+/**
+ * Gets low entropy data from the client.
+ * @param client_handler The UDP_HANDLER for the client connection on the server.
+ * @param config The config data.
+ * @param type The train_type either high or low for low or high entropy data.
+ * @param result The result data for reporting purposes. This is an empty buffer that is populated.
+ * @param low_entropy_duration The result for the time it takes for the low entropy data to send.
+ * @return Returns 0 if no errors occurred, 1 otherwise.
+ */
+int get_low_entropy_data (
+  UDP_HANDLER client_handler,
+  CONFIG config,
+  enum train_type type,
+  char *result,
+  double *low_entropy_duration);
+
+/**
+ * Prints out if compression is detected.
+ * @param result The result that stores the information if compression is detected.
+ * @param low_entropy_duration The low entropy duration in milliseconds.
+ * @param high_entropy_duration The high entropy duration in milliseconds.
+ * @return Returns 0 if no errors, 1 otherwise.
+ */
 int process_comp (char *result, double low_entropy_duration, double high_entropy_duration);
+
+/**
+ * Processes the received times for UDP packets in part 1.
+ * The result is stored in the result buffer and the mss value for the time it takes to receive the packet train.
+ * This works for high or low entropy data, this is differentiated by the enum train_type t
+ *
+ * @param config The configuration data.
+ * @param recv_times An array of timeb for use of storing the RST received times.
+ *                   This has a length of RST_PACKET_TOTAL in the constants.h
+ * @param mss A pointer to store the time in milliseconds to receive the packet train.
+ * @param result The result message buffer that stores the result information.
+ * @param t The type either high or low for low or high entropy data.
+ * @return Returns 0 if no errors, 1 otherwise.
+ */
 int process_train (CONFIG config, struct timeb recv_times[], double *mss, char result[], enum train_type t);
-int
-send_single_train (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in, UDP_CLIENT_CONN udp_client);
-int
-setup_sockaddrs (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in);
-int
-setup_raw_socket_conns (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in, UDP_CLIENT_CONN *udp_client, int *sockfd);
+
+/**
+ * Sends a train of UDP high and low entropy data for part 2.
+ * This sends both packet trains as well as sending the raw TCP sockets.
+ *
+ * @param config The configuration data.
+ * @param sockfd The raw socket file descriptor used for sending data.
+ * @param sin The struct sockaddr_in struct for the sending machine.
+ * @param head_sockaddr_in The struct sockaddr_in for the TCP SYN head port/host info.
+ * @param tail_sockaddr_in The struct sockaddr_in for the TCP SYN tail port/host info.
+ * @param udp_client The UDP_CLIENT used to send the UDP packet train data.
+ * @return Returns 0 if no errors, 1 otherwise.
+ */
+int send_single_train (
+  CONFIG config,
+  int sockfd,
+  struct sockaddr_in *sin,
+  struct sockaddr_in *head_sockaddr_in,
+  struct sockaddr_in *tail_sockaddr_in,
+  UDP_CLIENT_CONN udp_client);
+
+/**
+ * Helper function to create struct sockaddr_in's for creating and receiving raw TCP packets.
+ *
+ * @param config The configuration data.
+ * @param sin The struct sockaddr_in struct for the sending machine.
+ * @param head_sockaddr_in The struct sockaddr_in for the TCP SYN head port/host info.
+ * @param tail_sockaddr_in The struct sockaddr_in for the TCP SYN tail port/host info.
+ * @return Returns 0 if no errors, 1 otherwise.
+ */
+int setup_sockaddrs (
+  CONFIG config,
+  struct sockaddr_in *sin,
+  struct sockaddr_in *head_sockaddr_in,
+  struct sockaddr_in *tail_sockaddr_in);
+
+/**
+ * Sets up all of the structs and sockets raw a raw TCP socket.  This also creates the UDP_CLIENT_CONN.
+ * All of the inputs other than the config should be created beforehand and they are populated with a pointer for each variable.
+ * @param config The configuration data.
+ * @param sin The struct sockaddr_in pointer for the sending machine.
+ * @param head_sockaddr_in The struct sockaddr_in pointer for the TCP SYN head port/host info.
+ * @param tail_sockaddr_in The struct sockaddr_in pointer for the TCP SYN tail port/host info.
+ * @param udp_client The UDP_CLIENT_CONN pointer that is created in this funciton.
+ * @param sockfd The raw socket id pointer.
+ * @return Returns 0 if no errors, 1 otherwise.
+ */
+int setup_raw_socket_conns (
+  CONFIG config,
+  struct sockaddr_in *sin,
+  struct sockaddr_in *head_sockaddr_in,
+  struct sockaddr_in *tail_sockaddr_in,
+  UDP_CLIENT_CONN *udp_client,
+  int *sockfd);
+
+/**
+ * Closes the receiver thread for the RST packets.
+ * @param rst_listener_thread The pointer to the thread id.
+ * @return Returns 0 if no errors, 1 otherwise.
+ */
 int close_recv_thread (pthread_t *rst_listener_thread);
 
 int

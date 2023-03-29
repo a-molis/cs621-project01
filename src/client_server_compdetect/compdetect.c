@@ -16,7 +16,6 @@
 // TODO check if code follows GNU style
 // TODO update times
 // TODO make sure all errors handled
-// TODO remove all printfs
 // TODO uncomment all code
 // TODO better error handling around unable ot connect to server with different ip address
 // TODO all other TODOS
