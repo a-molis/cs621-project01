@@ -3,20 +3,16 @@
  */
 #include <stdio.h>
 #include <arpa/inet.h>
-#include <netdb.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include "constants.h"
 #include "udp_sock_handler.h"
 
-
 UDP_HANDLER
-udp_new_handler(int sockfd)
+udp_new_handler (int sockfd)
 {
   UDP_HANDLER handler = malloc (sizeof (struct UDP_SOCKET_HANDLER));
   if (handler == NULL)
@@ -29,7 +25,7 @@ udp_new_handler(int sockfd)
 }
 
 int
-udp_destroy_handler(UDP_HANDLER handler)
+udp_destroy_handler (UDP_HANDLER handler)
 {
   if (handler)
     {
@@ -42,7 +38,7 @@ udp_destroy_handler(UDP_HANDLER handler)
 }
 
 UDP_SERVER
-udp_new_server(int port)
+udp_new_server (int port)
 {
   UDP_SERVER server = malloc (sizeof (struct UDP_SOCKET_HANDLER));
   if (server == NULL)
@@ -56,7 +52,7 @@ udp_new_server(int port)
 }
 
 int
-udp_server_destroy(UDP_SERVER server)
+udp_server_destroy (UDP_SERVER server)
 {
   if (server)
     {
@@ -123,7 +119,7 @@ udp_server_next_connection (UDP_SERVER server)
 }
 
 UDP_CLIENT_CONN
-udp_new_client(char *ip_address, unsigned short port)
+udp_new_client (char *ip_address, unsigned short port)
 {
   UDP_CLIENT_CONN client = malloc (sizeof (struct UDP_CLIENT_HANDLER));
     if (client == NULL)
@@ -137,7 +133,7 @@ udp_new_client(char *ip_address, unsigned short port)
 }
 
 int
-udp_client_connect(UDP_CLIENT_CONN client)
+udp_client_connect (UDP_CLIENT_CONN client)
 {
   int sock;
   if ((sock = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -163,14 +159,13 @@ udp_client_connect(UDP_CLIENT_CONN client)
       return 1;
     }
   memset (sin, 0, sizeof (*sin));
-  sin->sin_addr.s_addr = inet_addr(client->ip_address);
+  sin->sin_addr.s_addr = inet_addr (client->ip_address);
   sin->sin_port = htons (client->port);
   sin->sin_family = AF_INET;
   UDP_HANDLER handler = udp_new_handler (sock);
   client->handler = handler;
   client->handler->addr = sin;
   client->handler->addr_len = sizeof (*sin);
-
   client->handler->sockfd = sock;
   return 0;
 }
@@ -197,21 +192,21 @@ udp_client_connect_bind (UDP_CLIENT_CONN client, int src_port)
 }
 
 int
-udp_destroy_client(UDP_CLIENT_CONN client)
+udp_destroy_client (UDP_CLIENT_CONN client)
 {
   if (client)
     {
-      udp_destroy_handler(client->handler);
-      free(client);
+      udp_destroy_handler (client->handler);
+      free (client);
     }
   return 0;
 }
 
 int
-udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len)
+udp_sendto_n (UDP_HANDLER handler, char *buf, int buf_len)
 {
-  int sent = sendto(handler->sockfd, buf, buf_len, 0,
-                    (struct sockaddr *)handler->addr, handler->addr_len);
+  int sent = sendto (handler->sockfd, buf, buf_len, 0,
+                     (struct sockaddr *)handler->addr, handler->addr_len);
   if (sent < buf_len)
     {
       perror ("Error sending udp datagram");
@@ -221,66 +216,13 @@ udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len)
 }
 
 int
-udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len)
+udp_recvfrom_n (UDP_HANDLER handler, char *buf, int buf_len)
 {
   int received = recvfrom (handler->sockfd, buf, buf_len, 0,
-                          (struct sockaddr *) handler->addr, &handler->addr_len);
+                           (struct sockaddr *) handler->addr, &handler->addr_len);
   if (received < buf_len)
     {
       return errno;
     }
-  return 0;
-}
-
-// TODO remove function
-int udp_sendto(UDP_HANDLER handler, char *buf, int buf_len)
-{
-  char num_buf[4];
-  uint32_t len_nb = htonl(buf_len);
-  num_buf[3] = (len_nb >> 0) & 0xFF;
-  num_buf[2] = (len_nb >> 8) & 0xFF;
-  num_buf[1] = (len_nb >> 16) & 0xFF;
-  num_buf[0] = (len_nb >> 24) & 0xFF;
-  int sent_size = udp_sendto_n(handler, num_buf, 4);
-  if (sent_size)
-    {
-      perror ("Error with udp_sendto_n failed to sent size");
-      return 1;
-    }
-  int sent_data = udp_sendto_n(handler, buf, buf_len);
-  if (sent_data)
-    {
-      perror("Error sending data with udp_sendto");
-      return 1;
-    }
-  return 0;
-}
-
-// TODO remove function
-int udp_recvfrom(UDP_HANDLER handler, char *buf, int *output_len)
-{
-  *output_len = 0;
-  char num_buf[4];
-  int recv_len = udp_recvfrom_n (handler, num_buf, 4);
-  if (recv_len)
-    {
-      perror ("tcp_recvn failed to recv enough data "
-             "from socket when getting length");
-      return 1;
-    }
-  uint32_t len_nb = (num_buf[0] << 24)
-                    | (num_buf[1] << 16)
-                    | (num_buf[2] << 8)
-                    | (num_buf[3] << 0);
-  int size = ntohl (len_nb);
-
-  int received = udp_recvfrom_n (handler, buf, size);
-  if (received)
-    {
-      perror ("tcp_recv failed to recv enough data "
-             "from socket when getting data");
-      return 1;
-    }
-  *output_len = size;
   return 0;
 }

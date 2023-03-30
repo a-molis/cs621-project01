@@ -23,7 +23,7 @@ struct args
  * @return Pointer to return variable.
  */
 void
-*run_server(void *inputs)
+*run_server (void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short server_port = atoi (server_args->port);
@@ -36,15 +36,13 @@ void
       abort ();
     }
   TCP_HANDLER client_handler = tcp_server_next_connection (server);
-  int sent = tcp_sendn(client_handler, server_args->input, 6);
+  int sent = tcp_sendn (client_handler, server_args->input, 6);
   if (sent)
     printf("server failed to send hello from server\n");
-
   if (destroy_tcp_handler (client_handler))
     printf("Failed to destroy client socket handler in server\n");
   if (destroy_tcp_sever (server))
     printf ("Failed to destroy server handler");
-
   return 0;
 }
 
@@ -54,12 +52,12 @@ void
  * @return Pointer to return variable.
  */
 void
-*run_client(void *inputs)
+*run_client (void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short port = atoi (server_args->port);
   TCP_CLIENT_CONN client = tcp_new_client (server_args->ip_addr, port);
-  int connected = tcp_client_connect(client);
+  int connected = tcp_client_connect (client);
   if (connected)
     {
       printf ("Unable to connect to server %s on server_port %d\n", server_args->ip_addr, port);
@@ -80,7 +78,7 @@ void
  * @return Returns 0 if no errors, 1 otherwise.
  */
 int
-main() {
+main () {
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
   server_args->port =  "12055";
@@ -90,11 +88,11 @@ main() {
   pthread_create (&server_thread, NULL, (void *) &run_server, (void *) server_args);
   sleep (1);
   pthread_create (&client_thread, NULL, (void *) &run_client, (void *) server_args);
-  pthread_join(client_thread, NULL);
-  pthread_join(server_thread, NULL);
+  pthread_join (client_thread, NULL);
+  pthread_join (server_thread, NULL);
   int success = 1;
   if (strcmp(server_args->input, server_args->output) == 0)
     success = 0;
-  free(server_args);
+  free (server_args);
   return success;
 }

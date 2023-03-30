@@ -9,7 +9,7 @@
  * @return Returns 0 if no errors, 1 otherwise.
  */
 int
-main()
+main ()
 {
   char *config_path = "test/test_config.json";
   char buf[MAX_TCP_SIZE];

@@ -27,7 +27,7 @@ struct args
  * @return Pointer to return variable.
  */
 void
-*run_server(void *inputs)
+*run_server (void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short server_port = atoi (server_args->port);
@@ -47,15 +47,13 @@ void
 *run_client(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
-
   char buf[MAX_TCP_SIZE];
   CONFIG config = get_config (server_args->config_path, buf);
   int pre_probe = client_pre_probe (config, buf);
   if (pre_probe)
       printf ("Client failed to pre probe server");
   *server_args->client_status = pre_probe;
-  config_destroy(config);
-
+  config_destroy (config);
   return 0;
 }
 
@@ -78,11 +76,11 @@ main() {
   pthread_create (&server_thread, NULL, (void *) &run_server, (void *) server_args);
   sleep (1);
   pthread_create (&client_thread, NULL, (void *) &run_client, (void *) server_args);
-  pthread_join(client_thread, NULL);
-  pthread_join(server_thread, NULL);
+  pthread_join (client_thread, NULL);
+  pthread_join (server_thread, NULL);
   int success = 1;
   if (!*server_args->client_status && !*server_args->server_status)
     success = 0;
-  free(server_args);
+  free (server_args);
   return success;
 }

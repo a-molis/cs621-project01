@@ -4,7 +4,6 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 #include <strings.h>
 #include <signal.h>
@@ -29,7 +28,7 @@ struct args
  * @return Pointer to return variable.
  */
 void
-*run_server(void *inputs)
+*run_server (void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short server_port = atoi (server_args->port);
@@ -48,7 +47,7 @@ void
       printf ("Server failed to probe server\n");
       *server_args->server_status = 1;
     }
-  if (server_post_probe(config, result))
+  if (server_post_probe (config, result))
     {
       printf ("Server failed to send post probe\n");
       *server_args->server_status = 1;
@@ -63,7 +62,7 @@ void
  * @return Pointer to return variable.
  */
 void
-*run_client(void *inputs)
+*run_client (void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
 
@@ -76,7 +75,7 @@ void
       printf ("Client failed to pre probe server");
       *server_args->client_status = 1;
     }
-  int probe = client_probe(config);
+  int probe = client_probe (config);
   if (probe)
     {
       printf ("Client failed to probe server\n");
@@ -91,7 +90,7 @@ void
       printf ("Client error in post probe stage\n");
       *server_args->client_status = 1;
     }
-  config_destroy(config);
+  config_destroy (config);
   return 0;
 }
 
@@ -118,11 +117,11 @@ main() {
   sigaddset (&set, SIGALRM);
   pthread_sigmask (SIG_BLOCK, &set, NULL);
   pthread_create (&client_thread, NULL, (void *) &run_client, (void *) server_args);
-  pthread_join(client_thread, NULL);
-  pthread_join(server_thread, NULL);
+  pthread_join (client_thread, NULL);
+  pthread_join (server_thread, NULL);
   int success = 1;
   if (!*server_args->client_status && !*server_args->server_status)
     success = 0;
-  free(server_args);
+  free (server_args);
   return success;
 }

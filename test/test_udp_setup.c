@@ -24,17 +24,17 @@ struct args {
  * @return Pointer to return variable.
  */
 void
-*run_server(void *inputs)
+*run_server (void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short server_port = atoi (server_args->port);
   UDP_SERVER server = udp_new_server (server_port);
   server_args->started_server = udp_server_start (server);
   UDP_HANDLER client_handler = udp_server_next_connection (server);
-  if (udp_server_destroy(server))
+  if (udp_server_destroy (server))
     printf ("Failed to destroy server handler");
   if (udp_destroy_handler (client_handler)){
-    printf ("unable to destory client handler");
+    printf ("unable to destroy client handler");
   }
   return 0;
 }
@@ -45,7 +45,7 @@ void
  * @return Pointer to return variable.
  */
 void
-*run_client(void *inputs)
+*run_client (void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short port = atoi (server_args->port);
@@ -82,8 +82,8 @@ main()
   pthread_create (&server_thread, NULL, (void *) &run_server, (void *) server_args);
   sleep (1);
   pthread_create (&client_thread, NULL, (void *) &run_client, (void *) server_args);
-  pthread_join(client_thread, NULL);
-  pthread_join(server_thread, NULL);
+  pthread_join (client_thread, NULL);
+  pthread_join (server_thread, NULL);
   int success = 1;
   if (!server_args->started_client || !server_args->started_server)
     success = 0;

@@ -1,3 +1,4 @@
+# Bash script for running tests with make test or make test_all
 #!/bin/bash
 
 ARGS=$@

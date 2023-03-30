@@ -60,6 +60,10 @@ static unsigned short WINDOW_SIZE = 64240;
 // Max value for seq num in raw TCP packet.
 static unsigned int MAX_SEQ_NUM = 500;
 
+// The max len of the config file.
 static int MAX_CONFIG_LEN = 5000;
+
+// The max number of listeners for a server.
+static int MAX_LISTENERS = 5;
 
 #endif //_CONSTANTS_H_
