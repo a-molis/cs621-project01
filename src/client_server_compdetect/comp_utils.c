@@ -591,7 +591,7 @@ setup_raw_socket_conns (
       perror ("Failed to create udp_client");
       return 1;
     }
-  if (udp_client_connect ((*udp_client)))
+  if (udp_client_connect_bind ((*udp_client), config->udp_source_port))
     {
       if (udp_destroy_client ((*udp_client)))
         printf ("Failed to destroy client");
