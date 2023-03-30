@@ -6,13 +6,9 @@
 #include "comp_utils.h"
 #include "udp_sock_handler.h"
 
-// TODO valgrind?
 // TODO check if code follows GNU style
-  // TODO space after every function call
 // TODO all other TODOS
-
 // TODO check if Upppercase names ok for struct names
-// TODO read over gnu style
 
 /**
  * Main function to run compression detection for part 2.

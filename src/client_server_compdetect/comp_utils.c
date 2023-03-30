@@ -863,7 +863,7 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
 
   tcp->source = sin->sin_port;
   tcp->dest = sout->sin_port;
-  tcp->seq = htonl(rand() % MAX_SEQ_NUM);
+  tcp->seq = htonl (rand() % MAX_SEQ_NUM);
   tcp->ack_seq = htonl (0);
   tcp->syn = 1;
   tcp->window = htons (WINDOW_SIZE);
