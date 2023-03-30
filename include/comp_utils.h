@@ -297,7 +297,7 @@ int setup_raw_socket_conns (
  * @param rst_listener_thread The pointer to the thread id.
  * @return Returns 0 if no errors, 1 otherwise.
  */
-int close_recv_thread (pthread_t *rst_listener_thread);
+int close_recv_thread (pthread_t *rst_listener_thread, CONFIG config);
 
 /**
  * Handler to send signal to RST recv thread to end if timeout has occurred.

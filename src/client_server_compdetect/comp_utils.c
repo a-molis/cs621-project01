@@ -509,7 +509,7 @@ compdetect_single (CONFIG config)
       perror ("Failed to destroy upd client");
       return 1;
     }
-  if (close_recv_thread (&rst_listener_thread))
+  if (close_recv_thread (&rst_listener_thread, config))
     {
       perror ("Error closing thread for recv");
       free (args);
@@ -538,7 +538,7 @@ stop_thread (union sigval input)
 }
 
 int
-close_recv_thread (pthread_t *rst_listener_thread)
+close_recv_thread (pthread_t *rst_listener_thread, CONFIG config)
 {
   // Reviewed this source on how to create a timer
   // https://opensource.com/article/21/10/linux-timers
@@ -548,7 +548,8 @@ close_recv_thread (pthread_t *rst_listener_thread)
   struct sigevent sig;
   memset (&sig, 0, sizeof (sig));
   struct itimerspec timer;
-  timer.it_value.tv_sec = 1;
+  int timeout_duration = config->inter_measure_time / 3;
+  timer.it_value.tv_sec = timeout_duration;
   timer.it_value.tv_nsec = 0;
   timer.it_interval.tv_nsec = 0;
   timer.it_interval.tv_sec = 0;
