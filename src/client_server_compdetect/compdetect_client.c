@@ -64,8 +64,9 @@ comp_client_run (char *config_path)
       perror ("Client failed to probe server");
       abort ();
     }
-  // TODO test without sleep
-  sleep (5);
+  // Sleep for enough time for server to open server connection.
+  int sleep_time = config->inter_measure_time * 1.7;
+  sleep (sleep_time);
   if (client_post_probe (config))
     {
       perror ("Client error in post probe stage");

@@ -48,7 +48,6 @@ void
       printf ("Server failed to probe server\n");
       *server_args->server_status = 1;
     }
-  printf ("Result from server results:\n%s\n", result);
   if (server_post_probe(config, result))
     {
       printf ("Server failed to send post probe\n");
@@ -83,9 +82,9 @@ void
       printf ("Client failed to probe server\n");
       *server_args->client_status = 1;
     }
-  // TODO update timing in client server
-  // TODO see if we can use thread for server at the end?
-  sleep (25);
+  // Sleep for enough time for server to open server connection.
+  int sleep_time = config->inter_measure_time * 1.7;
+  sleep (sleep_time);
   int post_probe = client_post_probe (config);
   if (post_probe)
     {

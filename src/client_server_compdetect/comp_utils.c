@@ -155,8 +155,6 @@ client_probe(CONFIG config)
       perror ("Failed to destroy upd client");
       return 1;
     }
-  // TODO check if sleep needed
-  sleep(5);
   return 0;
 }
 
@@ -221,7 +219,8 @@ server_probe (CONFIG config, char *result)
       return 1;
   }
   signal (SIGALRM, signal_handler);
-  alarm (20);
+  int timeout = config->inter_measure_time * 1.3;
+  alarm (timeout);
   double high_entropy_duration;
   size_t len = strlen (result);
   if (recv_udp_train (client_handler, config, high, result + len, &high_entropy_duration))
@@ -267,7 +266,8 @@ get_low_entropy_data (
   double *low_entropy_duration)
 {
   signal (SIGALRM, signal_handler);
-  alarm (UPP_TIMEOUT);
+  int timeout = config->inter_measure_time / 3;
+  alarm (timeout);
   if (recv_udp_train (client_handler, config, low, result, low_entropy_duration))
     {
       perror ("Client failed to send low entropy data");
@@ -298,8 +298,6 @@ get_packet_id (char *buf, uint16_t *num)
 
 int send_udp_train (UDP_CLIENT_CONN udp_client, CONFIG config, enum train_type t, char *buf)
 {
-  // TODO remove sleep
-  sleep(1);
   uint16_t packet_id = 0;
   for (int i = 0; i < config->udp_packet_train_len; i++, packet_id++)
     {
@@ -367,7 +365,6 @@ process_train (CONFIG config, struct timeb recv_times[], double *mss, char resul
       *mss = (1000 * difftime(recv_times[end].time, recv_times[start].time)) +
              recv_times[end].millitm -  recv_times[start].millitm;
       sprintf (result, "It took %.f ms between packet between packets %d and %d for %s entropy data\n", *mss, start, end, train_type_str[t]);
-      printf (result);
     }
   else
     {
