@@ -30,7 +30,7 @@
  * @return Returns 0 if there are no errors, 1 otherwise.
  */
 int
-main(int argc, char *argv[])
+main (int argc, char *argv[])
 {
   char *config_path = argv[1];
   if (!config_path)

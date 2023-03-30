@@ -242,7 +242,7 @@ server_probe (CONFIG config, char *result)
       perror ("Failed to destroy udp_server or client_handler in server probe stage");
       return 1;
     }
-  if (process_comp(result, low_entropy_duration, high_entropy_duration))
+  if (process_comp (result, low_entropy_duration, high_entropy_duration))
     {
       perror ("Failed to get entropy detection");
       return 1;
@@ -370,7 +370,8 @@ process_train (CONFIG config, struct timeb recv_times[], double *mss, char resul
     {
       *mss = (1000 * difftime(recv_times[end].time, recv_times[start].time)) +
              recv_times[end].millitm -  recv_times[start].millitm;
-      sprintf (result, "It took %.f ms between packet between packets %d and %d for %s entropy data\n", *mss, start, end, train_type_str[t]);
+      sprintf (result, "It took %.f ms between packet between packets %d and %d for %s entropy data\n",
+               *mss, start, end, train_type_str[t]);
     }
   else
     {
@@ -467,13 +468,13 @@ compdetect_single (CONFIG config)
       return 1;
     }
   struct timeb *recv_times = (struct timeb *) malloc (sizeof (struct timeb) * RST_PACKET_TOTAL);
-  memset (recv_times, 0, sizeof (struct timeb) * RST_PACKET_TOTAL );
   if (recv_times == NULL)
     {
       perror ("Unable to create recv_times array");
       free (args);
       return 1;
     }
+  memset (recv_times, 0, sizeof (struct timeb) * RST_PACKET_TOTAL );
   int sockfd = -1;
   if (setup_raw_socket_conns (config, &sin, &head_sockaddr_in, &tail_sockaddr_in, &udp_client, &sockfd))
     {
@@ -482,7 +483,7 @@ compdetect_single (CONFIG config)
     }
   if (start_rst_listener (&rst_listener_thread, args, config, recv_times, sockfd, &sin, &head_sockaddr_in))
     {
-      perror("Failed to set up thread for receiving RST packets");
+      perror ("Failed to set up thread for receiving RST packets");
       if (udp_destroy_client (udp_client))
         printf ("Failed to destroy client");
       close (sockfd);
@@ -502,7 +503,7 @@ compdetect_single (CONFIG config)
     }
   if (udp_destroy_client (udp_client))
     {
-      perror("Failed to set up thread for receiving RST packets");
+      perror ("Failed to set up thread for receiving RST packets");
       free (args);
       free (recv_times);
       close (sockfd);
@@ -678,7 +679,7 @@ send_single_train (
       return 1;
     }
   char high_data[config->udp_payload_size];
-  if (get_high_entropy_data(config, high_data))
+  if (get_high_entropy_data (config, high_data))
     {
       perror ("Unable to open high entropy data");
       return 1;
@@ -730,7 +731,7 @@ recv_rst (void *inputs)
       if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_head_syn_port && tcp->rst)
         {
           struct timeb recv_time;
-          ftime(&recv_time);
+          ftime (&recv_time);
           if (count > 1)
             *(args->recv_times + 2) = recv_time;
           else
@@ -741,7 +742,7 @@ recv_rst (void *inputs)
       else if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_tail_syn_port && tcp->rst)
         {
           struct timeb recv_time;
-          ftime(&recv_time);
+          ftime (&recv_time);
           if (count  > 1)
             *(args->recv_times + 3) = recv_time;
           else
@@ -766,9 +767,9 @@ print_results (struct timeb *recv_times, const int rst_count)
           return;
         }
     }
-  double low_entropy_duration = compute_time_diff(*recv_times, *(recv_times + 1));
-  double high_entropy_duration = compute_time_diff(*(recv_times + 2), *(recv_times + 3));
-  printf("Time between low entropy packets %.f mss and between high entropy packets %.f mss\n",
+  double low_entropy_duration = compute_time_diff (*recv_times, *(recv_times + 1));
+  double high_entropy_duration = compute_time_diff (*(recv_times + 2), *(recv_times + 3));
+  printf ("Time between low entropy packets %.f mss and between high entropy packets %.f mss\n",
          low_entropy_duration, high_entropy_duration);
   printf ("Compression detected on link: ");
   if (high_entropy_duration - low_entropy_duration > THRESHOLD)
@@ -891,7 +892,7 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
 
 // This function is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
 unsigned short
-checksum(const char *buf, unsigned size)
+checksum (const char *buf, unsigned size)
 {
   unsigned sum = 0, i;
 

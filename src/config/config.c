@@ -46,7 +46,7 @@ config_new (char *config_str)
       return NULL;
     }
   parse_optional_params (config, json);
-  cJSON_Delete(json);
+  cJSON_Delete (json);
   return config;
 }
 
@@ -138,13 +138,13 @@ parse_optional_params (CONFIG config, const cJSON *json)
 CONFIG
 get_config (char *config_path, char *buf)
 {
-  int opened = open_file(config_path, buf);
+  int opened = open_file (config_path, buf);
   if (opened)
     {
       perror ("Failed to open config file");
       return NULL;
     }
-  return config_new(buf);
+  return config_new (buf);
 }
 
 int
@@ -156,12 +156,11 @@ open_file (char *path, char *buf)
       printf("Failed to open file %s\n", path);
       return 1;
     }
-  // TODO move to constants
-  int size = 1024;
+  int size = MAX_CONFIG_LEN;
   size_t offset = 0;
   while (fgets(buf + offset, size, fd) != NULL)
     {
-      offset = strlen(buf);
+      offset = strlen (buf);
     }
   if (fclose (fd))
     {

@@ -60,4 +60,6 @@ static unsigned short WINDOW_SIZE = 64240;
 // Max value for seq num in raw TCP packet.
 static unsigned int MAX_SEQ_NUM = 500;
 
+static int MAX_CONFIG_LEN = 5000;
+
 #endif //_CONSTANTS_H_

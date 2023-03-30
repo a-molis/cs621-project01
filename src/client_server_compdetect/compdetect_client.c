@@ -25,7 +25,7 @@ comp_client_run (char *config_path);
  * @return Returns 0 if there are no errors, 1 otherwise.
  */
 int
-main(int argc, char *argv[])
+main (int argc, char *argv[])
 {
   char *config_path = argv[1];
   if (!config_path)
@@ -57,7 +57,7 @@ comp_client_run (char *config_path)
       perror ("Client failed to pre probe server");
       return 1;
     }
-  if (client_probe(config))
+  if (client_probe (config))
     {
       perror ("Client failed to probe server");
       return 1;
@@ -71,6 +71,6 @@ comp_client_run (char *config_path)
       perror ("Client error in post probe stage");
       return 1;
     }
-  config_destroy(config);
+  config_destroy (config);
   return 0;
 }
