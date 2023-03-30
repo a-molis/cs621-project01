@@ -127,7 +127,10 @@ First the server should be started with `src/client_server_compdetect/compdetect
 This port number should match the `tcp_probing_port` in the config.
 
 To start the client run `src/client_server_compdetect/compdetect_client myconfig.json` ran at the root of the project code. 
-Then wait for the results to display on the client. 
+Then wait for the results to display on the client.
+
+The packet ids for the UDP train are used to print out a message at the end. 
+It will show which packet ids were used to make the calculation for compression. 
 
 #### Part 1 and 2 Code
 The business logic code for part 1 and 2 are found in `src/client_server_compdetect/comp_utils.c`. With the public functions documented in `include/comp_utils.h`.
@@ -142,6 +145,9 @@ The network card device/interface name must be present in the config json as `re
 #### Running Part 2
 Once the configuration file json is set up correctly run `make` to build the project. 
 The run `sudo src/client_server_compdetect/compdetect myconfig.json` to run the code for part 2. Then wait for the results.
+
+A timeout is used to ensure that a lost RST does not keep the program running indefinitely.
+A timer is used to signal the thread receiving the RST packets to finish.
 
 ### random_file
 The random file contains data to be used for sending high entropy data.

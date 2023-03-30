@@ -75,14 +75,14 @@ udp_server_start (UDP_SERVER server)
   if ((sock = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
     {
       perror ("couldn’t create TCP socket");
-      abort ();
+      return 1;
     }
   server->sockfd = sock;
   if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &optval,
                   sizeof (optval)) < 0)
     {
       perror ("Could not resuse address");
-      abort ();
+      return 1;
     }
   struct sockaddr_in *sin = malloc (sizeof (struct sockaddr_in));
   memset (sin, 0, sizeof (*sin));

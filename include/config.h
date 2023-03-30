@@ -39,7 +39,7 @@ CONFIG config_new (char *config_str);
  * Destroys/frees the config struct.
  * @param config The config struct to destroy.
  */
-void config_destroy(CONFIG config);
+void config_destroy (CONFIG config);
 
 /**
  * Opens a file with a path and stores the file in the buf.

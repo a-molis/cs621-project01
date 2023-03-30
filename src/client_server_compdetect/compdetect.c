@@ -6,25 +6,12 @@
 #include "comp_utils.h"
 #include "udp_sock_handler.h"
 
-
-// TODO create pcap files
-// TODO check rubric and project outline to verify all done
+// TODO valgrind?
 // TODO check if code follows GNU style
   // TODO space after every function call
-// TODO better error handling around unable ot connect to server with different ip address
 // TODO all other TODOS
-// TODO make sure all config variables used
 
-// TODO error check if not run with sudo
-// TODO refactor to move raw logic to other file
-// TODO make sure single application does not seg fault if not run without root
-// TODO move all free error check functions in wrapper functions
-// TODO check if using config->udp_source_port
-// TODO add error handling around close function calls
 // TODO explain makefile in readme
-// TODO check if udp_dest_port and udp_src_port should be different
-// TODO check what happens when client runs without server or args
-// TODO check what happens if requried arg not present.
 // TODO print invalid in part 1 if invalid results
 // TODO filter out any ARP messages in pcap files
 // TODO check if Upppercase names ok for struct names

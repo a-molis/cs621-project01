@@ -44,7 +44,7 @@ typedef struct TCP_CLIENT_HANDLER *TCP_CLIENT_CONN;
  * @param socket_fd The socket file descriptor
  * @return The output TCP_HANDLER or NULL if there was an error.
  */
-TCP_HANDLER new_tcp_handler(int socket_fd);
+TCP_HANDLER new_tcp_handler (int socket_fd);
 
 /**
  * Sends data over a TCP socket using a TCP_HANDLER.
@@ -54,7 +54,7 @@ TCP_HANDLER new_tcp_handler(int socket_fd);
  * @param buf_len The length of the buffer.
  * @return Returns 0 if there is no error, any other value indicates an error.
  */
-int tcp_sendn(TCP_HANDLER handler, char *buf, int buf_len);
+int tcp_sendn (TCP_HANDLER handler, char *buf, int buf_len);
 
 /**
  * Receives data using a TCP_HANDLER.
@@ -64,7 +64,7 @@ int tcp_sendn(TCP_HANDLER handler, char *buf, int buf_len);
  * @param buf_len The length of the data to receive.
  * @return Returns the total amount of data received.
  */
-int tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len);
+int tcp_recvn (TCP_HANDLER handler, char *buf, int buf_len);
 
 /**
  * This function sends data with a TCP_HANDLER.
@@ -80,7 +80,7 @@ int tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len);
  * @param buf_len The length of the buffer.
  * @return Returns 0 if there is no error, any other value indicates an error.
  */
-int tcp_send(TCP_HANDLER handler, char *buf, int buf_len);
+int tcp_send (TCP_HANDLER handler, char *buf, int buf_len);
 
 /**
  * Reads data off of a socket with a TCP_HEADER.
@@ -98,14 +98,14 @@ int tcp_send(TCP_HANDLER handler, char *buf, int buf_len);
  * @param output_len The length of data stored in the buffer.
  * @return Returns 0 if there is no error, any other value indicates an error.
  */
-int tcp_recv(TCP_HANDLER handler, char *buf, int *output_len);
+int tcp_recv (TCP_HANDLER handler, char *buf, int *output_len);
 
 /**
  * Destroys a TCP_HANDLER and frees the memory.
  * @param handler The TCP_HANDLER to to free/destroy.
  * @return
  */
-int destroy_tcp_handler(TCP_HANDLER handler);
+int destroy_tcp_handler (TCP_HANDLER handler);
 
 /**
  * Creates a TCP_SERVER struct. A TCP_SERVER is a wrapper for a TCP_HANDLER for a server.
@@ -114,28 +114,28 @@ int destroy_tcp_handler(TCP_HANDLER handler);
  * @param port The port used by the server for the connection.
  * @return The TCP_SERVER struct pointer.
  */
-TCP_SERVER tcp_new_server(int port);
+TCP_SERVER tcp_new_server (int port);
 
 /**
  * Starts up a TCP_SERVER by creating a socket, setting socket options, binding and then listening.
  * @param server The TCP_SERVER to start.
  * @return Returns 0 if there is no error, any other value indicates an error.
  */
-int tcp_server_start(TCP_SERVER server);
+int tcp_server_start (TCP_SERVER server);
 
 /**
  * Sets up an accept on the TCP_SERVER and returns a TCP_HANDLER for the new connection.
  * @param server The TCP_SERVER to use to get the next connection.
  * @return The TCP_HANDLER if there are no errors, NULL if there are errors.
  */
-TCP_HANDLER tcp_server_next_connection(TCP_SERVER server);
+TCP_HANDLER tcp_server_next_connection (TCP_SERVER server);
 
 /**
  * Destroys a TCP_SERVER by freeing all of the memory allocated for the server
  * @param server The TCP_SERVER to destroy
  * @return Returns 0 if there is no error, 1 if there is an error.
  */
-int destroy_tcp_sever(TCP_SERVER server);
+int destroy_tcp_sever (TCP_SERVER server);
 
 /**
  * Sets up a new TCP_CLIENT_CONN. A TCP_CLIENT_CONN is a pointer to a TCP_CLIENT_HANDLER struct.
@@ -146,20 +146,20 @@ int destroy_tcp_sever(TCP_SERVER server);
  * @param port The port the server is bound to.
  * @return This returns a TCP_CLIENT_CONN, if an error occurs NULL is returned.
  */
-TCP_CLIENT_CONN tcp_new_client(char *host_ip, unsigned short port);
+TCP_CLIENT_CONN tcp_new_client (char *host_ip, unsigned short port);
 
 /**
  * Connects with a TCP_CLIENT_CONN to a TCP_SERVER that is ready to accept a new connection.
  * @param client The TCP_CLIENT_CONN to connect.
  * @return Returns 0 if there is no error, 1 if there is an error.
  */
-int tcp_client_connect(TCP_CLIENT_CONN client);
+int tcp_client_connect (TCP_CLIENT_CONN client);
 
 /**
  * Destroys a TCP_CLIENT_CONN by freeing the memory allocated for the TCP_CLIENT_CONN.
  * @param client The TCP_CLIENT_CONN to destory.
  * @return Returns 0 if there is no error, 1 if there is an error.
  */
-int destroy_tcp_client(TCP_CLIENT_CONN client);
+int destroy_tcp_client (TCP_CLIENT_CONN client);
 
 #endif

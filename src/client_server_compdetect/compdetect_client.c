@@ -2,8 +2,6 @@
  * Main function for client code for part 1.
  */
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include "constants.h"
 #include "udp_sock_handler.h"
@@ -57,20 +55,21 @@ comp_client_run (char *config_path)
   if (pre_probe)
     {
       perror ("Client failed to pre probe server");
-      abort ();
+      return 1;
     }
   if (client_probe(config))
     {
       perror ("Client failed to probe server");
-      abort ();
+      return 1;
     }
+
   // Sleep for enough time for server to open server connection.
   int sleep_time = config->inter_measure_time * 1.7;
   sleep (sleep_time);
   if (client_post_probe (config))
     {
       perror ("Client error in post probe stage");
-      abort ();
+      return 1;
     }
   config_destroy(config);
   return 0;

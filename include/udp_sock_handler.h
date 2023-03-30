@@ -47,7 +47,7 @@ typedef struct UDP_CLIENT_HANDLER *UDP_CLIENT_CONN;
  * @param socket_fd The socket file descriptor to use in the wrapper.
  * @return A UDP_HANDLER if no errors, NULL otherwise.
  */
-UDP_HANDLER udp_new_handler(int socket_fd);
+UDP_HANDLER udp_new_handler (int socket_fd);
 
 /**
  * Sends data over a UDP connection using a UDP_HANDLER.
@@ -56,7 +56,7 @@ UDP_HANDLER udp_new_handler(int socket_fd);
  * @param buf_len The length of the buffer.
  * @return Returns 0 if there is no error 1 otherwise.
  */
-int udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len);
+int udp_sendto_n (UDP_HANDLER handler, char *buf, int buf_len);
 
 /**
  * Receives UDP data over a UDP connection using a UDP_HANDLER.
@@ -65,14 +65,14 @@ int udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len);
  * @param buf_len The length of the data to receive.
  * @return Returns 0 if there is no error 1 otherwise.
  */
-int udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len);
+int udp_recvfrom_n (UDP_HANDLER handler, char *buf, int buf_len);
 
 /**
  * Destroys a UDP_HANDLER by freeing its memory.
  * @param handler The UDP_HANDLER to free
  * @return Returns 0 if there is no error 1 otherwise.
  */
-int udp_destroy_handler(UDP_HANDLER handler);
+int udp_destroy_handler (UDP_HANDLER handler);
 
 /**
  * Creates a new UDP_SERVER based on a port.
@@ -82,14 +82,14 @@ int udp_destroy_handler(UDP_HANDLER handler);
  * @param port The port to use for the UDP_SERVER connection.
  * @return Returns 0 if there is no error 1 otherwise.
  */
-UDP_SERVER udp_new_server(int port);
+UDP_SERVER udp_new_server (int port);
 
 /**
  * Starts a UDP_SERVER connection by creating a socket, bind and allocates memory for the struct sockaddr_in.
  * @param server The UDP_SERVER to start.
  * @return Returns 0 if there is no error 1 otherwise.
  */
-int udp_server_start(UDP_SERVER server);
+int udp_server_start (UDP_SERVER server);
 
 /**
  * Creates a new UDP_HANDLER to use with the UDP_SERVER.
@@ -100,7 +100,7 @@ int udp_server_start(UDP_SERVER server);
  * @param server The UDP_SERVER to get a new UDP_HANDLER.
  * @return A new UDP_HANDLER if there are no errors.
  */
-UDP_HANDLER udp_server_next_connection(UDP_SERVER server);
+UDP_HANDLER udp_server_next_connection (UDP_SERVER server);
 
 /**
  * Frees all of the memory for a UDP_SERVER and it's variables.
@@ -120,7 +120,7 @@ int udp_server_destroy (UDP_SERVER server);
  * @param port The port of the server to connect to.
  * @return Returns a UDP_CLIENT_CONN if no errors, NULL otherwise.
  */
-UDP_CLIENT_CONN udp_new_client(char *ip_address, unsigned short port);
+UDP_CLIENT_CONN udp_new_client (char *ip_address, unsigned short port);
 
 /**
  * Creates the connection socket and other data for the UDP_CLIENT_CONN to work with a server.
@@ -128,7 +128,7 @@ UDP_CLIENT_CONN udp_new_client(char *ip_address, unsigned short port);
  * @param client The UDP_CLIENT_CONN to start.
  * @return Returns 0 if there are no error 1 otherwise.
  */
-int udp_client_connect(UDP_CLIENT_CONN client);
+int udp_client_connect (UDP_CLIENT_CONN client);
 
 /**
  * Creates the connection socket and other data for the UDP_CLIENT_CONN to work with a server.
@@ -138,13 +138,13 @@ int udp_client_connect(UDP_CLIENT_CONN client);
  * @param src_port
  * @return Returns 0 if there are no error 1 otherwise.
  */
-int udp_client_connect_bind(UDP_CLIENT_CONN client, int src_port);
+int udp_client_connect_bind (UDP_CLIENT_CONN client, int src_port);
 
 /**
  * Frees the memory for a UDP_CLIENT_CONN.
  * @param client The UDP_CLIENT_CONN to free.
  * @return Returns 0 if there are no error 1 otherwise.
  */
-int udp_destroy_client(UDP_CLIENT_CONN client);
+int udp_destroy_client (UDP_CLIENT_CONN client);
 
 #endif //_UDP_SOCK_HANDLER_H_

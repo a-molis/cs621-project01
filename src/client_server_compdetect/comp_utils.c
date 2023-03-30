@@ -34,11 +34,11 @@ int
 client_pre_probe (CONFIG config, char *config_str)
 {
   TCP_CLIENT_CONN client_conn = tcp_new_client (config->server_ip, config->tcp_probing_port);
-  int connected = tcp_client_connect(client_conn);
+  int connected = tcp_client_connect (client_conn);
   if (connected)
     {
       perror ("Client Failed to connect to server in pre probe");
-      abort ();
+      return 1;
     }
   int sent = tcp_send (client_conn->handler, config_str, strlen (config_str));
   if (sent)
@@ -92,12 +92,12 @@ server_pre_probe (int port)
   if (destroy_tcp_sever (server))
     {
       perror ("Server failed to close tcp conn in pre probe");
-      abort ();
+      return NULL;
     }
   if (destroy_tcp_handler (client_handler))
     {
       perror ("Server failed to close client_handler in pre probe");
-      abort ();
+      return NULL;
     }
   CONFIG config = config_new (buf);
   if (config == NULL)
@@ -109,7 +109,7 @@ server_pre_probe (int port)
 }
 
 int
-client_probe(CONFIG config)
+client_probe (CONFIG config)
 {
   UDP_CLIENT_CONN udp_client = udp_new_client (config->server_ip, config->udp_dest_port);
   if (udp_client == NULL)
@@ -139,7 +139,7 @@ client_probe(CONFIG config)
     }
   sleep (config->inter_measure_time);
   char high_data[config->udp_payload_size];
-  if (get_high_entropy_data(config, high_data))
+  if (get_high_entropy_data (config, high_data))
     {
       if (udp_destroy_client (udp_client))
         {
@@ -169,14 +169,14 @@ int
 get_high_entropy_data (CONFIG config, char data[])
 {
   bzero (data, config->udp_payload_size);
-  FILE *fd = fopen(random_file, "r");
+  FILE *fd = fopen (random_file, "r");
   if (!fd)
     {
-      printf("Failed to open file %s\n", random_file);
+      printf ("Failed to open file %s\n", random_file);
       return 1;
     }
   int read_len = config->udp_payload_size - 2;
-  if (fread(data + 2, sizeof (char), read_len, fd) < read_len)
+  if (fread (data + 2, sizeof (char), read_len, fd) < read_len)
     {
       perror ("Unable to read data from high entropy file\n");
       return 1;
@@ -184,7 +184,7 @@ get_high_entropy_data (CONFIG config, char data[])
   if (fclose (fd))
     {
       perror ("Unable to close file");
-      abort ();
+      return 1;
     }
   return 0;
 }
@@ -219,7 +219,7 @@ server_probe (CONFIG config, char *result)
       return 1;
     }
   double low_entropy_duration;
-  if (get_low_entropy_data(client_handler, config, low, result, &low_entropy_duration)) {
+  if (get_low_entropy_data (client_handler, config, low, result, &low_entropy_duration)) {
       if (udp_server_destroy (udp_server) | udp_destroy_handler (client_handler))
         printf ("Failed to destroy udp_server\n");
       perror ("error getting low entropy data");

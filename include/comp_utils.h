@@ -30,7 +30,7 @@ CONFIG server_pre_probe (int port);
  * @param config The config struct.
  * @return Returns 0 if there is no error, 1 otherwise.
  */
-int client_probe(CONFIG config);
+int client_probe (CONFIG config);
 
 /**
  * Runs the server probe stage.
@@ -160,7 +160,7 @@ int create_raw_socket (int *sockfd, char *interface, CONFIG config);
  * @param size The size of the buf.
  * @return The checksum.
  */
-unsigned short checksum(const char *buf, unsigned size);
+unsigned short checksum (const char *buf, unsigned size);
 
 // Struct for the RST receiver thread arguments.
 struct rst_listener_args
