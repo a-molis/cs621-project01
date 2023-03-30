@@ -1,3 +1,6 @@
+/**
+ * Integration test for testing simple UDP client server.
+ */
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,7 +9,9 @@
 #include "constants.h"
 #include "udp_sock_handler.h"
 
-struct args {
+// Struct for arguments passed to test threads.
+struct args
+  {
     char *ip_addr;
     char *port;
     char *input;
@@ -16,7 +21,13 @@ struct args {
     int input_len;
 };
 
-void *run_server(void *inputs)
+/**
+ * Function to be run in a thread for testing a simple UDP server.
+ * @param inputs The input pointer, should be a struct args.
+ * @return Pointer to return variable.
+ */
+void
+*run_server(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short server_port = atoi (server_args->port);
@@ -44,7 +55,13 @@ void *run_server(void *inputs)
   return 0;
 }
 
-void *run_client(void *inputs)
+/**
+ * Function to be run in a thread for testing a simple UDP client.
+ * @param inputs The input pointer, should be a struct args.
+ * @return Pointer to return variable.
+ */
+void
+*run_client(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short port = atoi (server_args->port);
@@ -59,7 +76,12 @@ void *run_client(void *inputs)
   return 0;
 }
 
-int main() {
+/**
+ * Main function for running test for simple UDP server/client.
+ * @return Returns 0 if no errors, 1 otherwise.
+ */
+int
+main() {
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
   server_args->port =  "2000";

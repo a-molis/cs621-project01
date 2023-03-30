@@ -1,3 +1,6 @@
+/**
+ * Functions for UDP socket operations and connections.
+ */
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -12,8 +15,8 @@
 #include "udp_sock_handler.h"
 
 
-// TODO add free/destroy
-UDP_HANDLER udp_new_handler(int sockfd)
+UDP_HANDLER
+udp_new_handler(int sockfd)
 {
   UDP_HANDLER handler = malloc (sizeof (struct UDP_SOCKET_HANDLER));
   if (handler == NULL)
@@ -25,7 +28,8 @@ UDP_HANDLER udp_new_handler(int sockfd)
   return handler;
 }
 
-int udp_destroy_handler(UDP_HANDLER handler)
+int
+udp_destroy_handler(UDP_HANDLER handler)
 {
   if (handler)
     {
@@ -37,7 +41,8 @@ int udp_destroy_handler(UDP_HANDLER handler)
   return 0;
 }
 
-UDP_SERVER udp_new_server(int port)
+UDP_SERVER
+udp_new_server(int port)
 {
   UDP_SERVER server = malloc (sizeof (struct UDP_SOCKET_HANDLER));
   if (server == NULL)
@@ -50,7 +55,8 @@ UDP_SERVER udp_new_server(int port)
   return server;
 }
 
-int udp_server_destroy(UDP_SERVER server)
+int
+udp_server_destroy(UDP_SERVER server)
 {
   if (server)
     {
@@ -62,8 +68,8 @@ int udp_server_destroy(UDP_SERVER server)
   return 0;
 }
 
-// TODO decouple start and initial client handler
-int udp_server_start(UDP_SERVER server)
+int
+udp_server_start (UDP_SERVER server)
 {
   int sock, optval = 1;
   if ((sock = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -91,11 +97,11 @@ int udp_server_start(UDP_SERVER server)
       perror ("cannot bind socket to address");
       return 1;
     }
-
   return 0;
 }
 
-UDP_HANDLER udp_server_next_connection (UDP_SERVER server)
+UDP_HANDLER
+udp_server_next_connection (UDP_SERVER server)
 {
   struct sockaddr_in *sout = malloc (sizeof (struct sockaddr_in));
   if (sout == NULL)
@@ -116,7 +122,8 @@ UDP_HANDLER udp_server_next_connection (UDP_SERVER server)
   return handler;
 }
 
-UDP_CLIENT_CONN udp_new_client(char *ip_address, unsigned short port)
+UDP_CLIENT_CONN
+udp_new_client(char *ip_address, unsigned short port)
 {
   UDP_CLIENT_CONN client = malloc (sizeof (struct UDP_CLIENT_HANDLER));
     if (client == NULL)
@@ -129,7 +136,8 @@ UDP_CLIENT_CONN udp_new_client(char *ip_address, unsigned short port)
   return client;
 }
 
-int udp_client_connect(UDP_CLIENT_CONN client)
+int
+udp_client_connect(UDP_CLIENT_CONN client)
 {
   int sock;
   if ((sock = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -167,7 +175,8 @@ int udp_client_connect(UDP_CLIENT_CONN client)
   return 0;
 }
 
-int udp_destroy_client(UDP_CLIENT_CONN client)
+int
+udp_destroy_client(UDP_CLIENT_CONN client)
 {
   if (client)
     {
@@ -177,7 +186,8 @@ int udp_destroy_client(UDP_CLIENT_CONN client)
   return 0;
 }
 
-int udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len)
+int
+udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len)
 {
   int sent = sendto(handler->sockfd, buf, buf_len, 0,
                     (struct sockaddr *)handler->addr, handler->addr_len);
@@ -189,19 +199,20 @@ int udp_sendto_n(UDP_HANDLER handler, char *buf, int buf_len)
   return 0;
 }
 
-int udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len)
+int
+udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len)
 {
-
-      int received = recvfrom (handler->sockfd, buf, buf_len, 0,
-                              (struct sockaddr *) handler->addr, &handler->addr_len);
-      if (received < buf_len)
-        {
-          perror("udp_recvfrom_n failed to recv enough data from socket");
-          return errno;
-        }
-        return 0;
+  int received = recvfrom (handler->sockfd, buf, buf_len, 0,
+                          (struct sockaddr *) handler->addr, &handler->addr_len);
+  if (received < buf_len)
+    {
+      perror("udp_recvfrom_n failed to recv enough data from socket");
+      return errno;
+    }
+  return 0;
 }
 
+// TODO remove function
 int udp_sendto(UDP_HANDLER handler, char *buf, int buf_len)
 {
   char num_buf[4];
@@ -225,6 +236,7 @@ int udp_sendto(UDP_HANDLER handler, char *buf, int buf_len)
   return 0;
 }
 
+// TODO remove function
 int udp_recvfrom(UDP_HANDLER handler, char *buf, int *output_len)
 {
   *output_len = 0;

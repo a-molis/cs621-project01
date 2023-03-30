@@ -1,3 +1,6 @@
+/**
+ * These functions support opening a json config file and deserializing it into a CONFIG.
+ */
 #include "config.h"
 #include <stdlib.h>
 #include <string.h>
@@ -5,10 +8,24 @@
 #include "constants.h"
 #include "cJSON.h"
 
+/**
+ * Parses optional config parameters.
+ * @param config The CONFIG to add the parameters to.
+ * @param json The cJSON struct that contains the json data.
+ * @return Returns 0 if there are no errors, 1 otherwise.
+ */
 int parse_optional_params (CONFIG config, const cJSON *json);
+
+/**
+ * Parses required config parameters.
+ * @param config The CONFIG to add the parameters to.
+ * @param json The cJSON struct that contains the json data.
+ * @return Returns 0 if there are no errors, 1 otherwise.
+ */
 int parse_required_params (CONFIG config, const cJSON *json);
 
-CONFIG config_new (char *config_str)
+CONFIG
+config_new (char *config_str)
 {
   CONFIG config = malloc (sizeof (struct CONFIG_DATA));
   if (config == NULL)
@@ -33,13 +50,15 @@ CONFIG config_new (char *config_str)
   return config;
 }
 
-void config_destroy (CONFIG config)
+void
+config_destroy (CONFIG config)
 {
   if (config)
     free (config);
 }
 
-int parse_required_params (CONFIG config, const cJSON *json)
+int
+parse_required_params (CONFIG config, const cJSON *json)
 {
   // Required config parameters
   cJSON *server_ip = cJSON_GetObjectItem (json, "server_ip");
@@ -67,7 +86,8 @@ int parse_required_params (CONFIG config, const cJSON *json)
   return 0;
 }
 
-int parse_optional_params (CONFIG config, const cJSON *json)
+int
+parse_optional_params (CONFIG config, const cJSON *json)
 {
   // Optional config parameters
   cJSON *udp_payload_size = cJSON_GetObjectItem (json, "udp_payload_size");
@@ -115,7 +135,8 @@ int parse_optional_params (CONFIG config, const cJSON *json)
   return 0;
 }
 
-CONFIG get_config (char *config_path, char *buf)
+CONFIG
+get_config (char *config_path, char *buf)
 {
   int opened = open_file(config_path, buf);
   if (opened)
@@ -126,7 +147,8 @@ CONFIG get_config (char *config_path, char *buf)
   return config_new(buf);
 }
 
-int open_file (char *path, char *buf)
+int
+open_file (char *path, char *buf)
 {
   FILE *fd = fopen(path, "r");
   if (!fd)

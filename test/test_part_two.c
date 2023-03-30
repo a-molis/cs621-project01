@@ -1,6 +1,13 @@
+/**
+ * System test for part 2.
+ */
 #include <stdio.h>
 #include "comp_utils.h"
 
+/**
+ * Runs part 2 as a test.
+ * @return Returns 0 if no errors, 1 otherwise.
+ */
 int
 main()
 {

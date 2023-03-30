@@ -1,3 +1,6 @@
+/**
+ * System test for part 1.
+ */
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,7 +13,9 @@
 #include "config.h"
 #include "comp_utils.h"
 
-struct args {
+// Struct for arguments passed to test threads.
+struct args
+{
     char *config_path;
     char *port;
     int *client_status;
@@ -18,8 +23,13 @@ struct args {
     int tcp_dest_tail_syn_port;
 };
 
-// TODO update to test probe not just set up
-void *run_server(void *inputs)
+/**
+ * Function to be run in a thread for testing server for part 1.
+ * @param inputs The input pointer, should be a struct args.
+ * @return Pointer to return variable.
+ */
+void
+*run_server(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short server_port = atoi (server_args->port);
@@ -48,7 +58,13 @@ void *run_server(void *inputs)
   return 0;
 }
 
-void *run_client(void *inputs)
+/**
+ * Function to be run in a thread for testing client for part 1.
+ * @param inputs The input pointer, should be a struct args.
+ * @return Pointer to return variable.
+ */
+void
+*run_client(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
 
@@ -80,7 +96,12 @@ void *run_client(void *inputs)
   return 0;
 }
 
-int main() {
+/**
+ * Main function for running test for part 1.
+ * @return Returns 0 if no errors, 1 otherwise.
+ */
+int
+main() {
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
   server_args->port =  "12062";

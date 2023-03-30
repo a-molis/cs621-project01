@@ -1,3 +1,6 @@
+/**
+ * Main function for client code for part 1.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,9 +11,23 @@
 #include "config.h"
 #include "comp_utils.h"
 
-int comp_client_run (char *config_path);
+/**
+ * Runs the client for compression detection for part 1.
+ * @param config_path The path to the configuration json.
+ * @return Returns 0 if there are no errors, 1 otherwise.
+ */
+int
+comp_client_run (char *config_path);
 
-int main(int argc, char *argv[])
+/**
+ * Main function to run compression detection client for part 1.
+ * Run with arg 1 as the path to the config file.
+ * @param argc The number of args.
+ * @param argv The pointer to the argv array.
+ * @return Returns 0 if there are no errors, 1 otherwise.
+ */
+int
+main(int argc, char *argv[])
 {
   char *config_path = argv[1];
   if (!config_path)
@@ -26,7 +43,8 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-int comp_client_run (char *config_path)
+int
+comp_client_run (char *config_path)
 {
   char buf[MAX_TCP_SIZE];
   CONFIG config = get_config (config_path, buf);
@@ -35,7 +53,6 @@ int comp_client_run (char *config_path)
       perror ("Error getting config for client");
       return 1;
     }
-
   int pre_probe = client_pre_probe (config, buf);
   if (pre_probe)
     {

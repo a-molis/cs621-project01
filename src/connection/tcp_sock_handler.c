@@ -1,3 +1,6 @@
+/**
+ * This file include wrappers for sockets and functions around sending and receiving data with TCP.
+ */
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -6,7 +9,8 @@
 #include <unistd.h>
 #include "tcp_sock_handler.h"
 
-TCP_HANDLER new_tcp_handler(int sockfd)
+TCP_HANDLER
+new_tcp_handler(int sockfd)
 {
   TCP_HANDLER handler = malloc(sizeof(struct TCP_SOCKET_HANDLER));
   if (handler == NULL)
@@ -18,7 +22,8 @@ TCP_HANDLER new_tcp_handler(int sockfd)
   return handler;
 }
 
-int destroy_tcp_handler(TCP_HANDLER handler)
+int
+destroy_tcp_handler(TCP_HANDLER handler)
 {
   if (handler)
     {
@@ -28,7 +33,8 @@ int destroy_tcp_handler(TCP_HANDLER handler)
   return 0;
 }
 
-TCP_SERVER tcp_new_server(int port)
+TCP_SERVER
+tcp_new_server(int port)
 {
   TCP_SERVER server = malloc (sizeof (struct TCP_SERVER_HANDLER));
   if (server == NULL)
@@ -40,7 +46,8 @@ TCP_SERVER tcp_new_server(int port)
   return server;
 }
 
-int tcp_server_start(TCP_SERVER server)
+int
+tcp_server_start(TCP_SERVER server)
 {
   int sock, optval = 1;
   if ((sock = socket (AF_INET, SOCK_STREAM, 0)) < 0)
@@ -80,7 +87,8 @@ int tcp_server_start(TCP_SERVER server)
   return 0;
 }
 
-TCP_HANDLER tcp_server_next_connection(TCP_SERVER server)
+TCP_HANDLER
+tcp_server_next_connection(TCP_SERVER server)
 {
   struct sockaddr_in addr;
   int client_sock = sizeof (addr);
@@ -94,7 +102,8 @@ TCP_HANDLER tcp_server_next_connection(TCP_SERVER server)
   return new_tcp_handler (client_sock);
 }
 
-int destroy_tcp_sever(TCP_SERVER server)
+int
+destroy_tcp_sever(TCP_SERVER server)
 {
   if (server)
     {
@@ -104,7 +113,8 @@ int destroy_tcp_sever(TCP_SERVER server)
    return 0;
 }
 
-TCP_CLIENT_CONN tcp_new_client(char *host_ip, unsigned short port)
+TCP_CLIENT_CONN
+tcp_new_client(char *host_ip, unsigned short port)
 {
   TCP_CLIENT_CONN client = malloc (sizeof (struct TCP_CLIENT_HANDLER));
   if (client == NULL)
@@ -119,7 +129,8 @@ TCP_CLIENT_CONN tcp_new_client(char *host_ip, unsigned short port)
   return client;
 }
 
-int tcp_client_connect(TCP_CLIENT_CONN client)
+int
+tcp_client_connect(TCP_CLIENT_CONN client)
 {
   int sock = socket (PF_INET, SOCK_STREAM, 0);
   if (sock < 0)
@@ -143,7 +154,8 @@ int tcp_client_connect(TCP_CLIENT_CONN client)
   return 0;
 }
 
-int destroy_tcp_client(TCP_CLIENT_CONN client)
+int
+destroy_tcp_client(TCP_CLIENT_CONN client)
 {
   if (client)
     {
@@ -154,7 +166,8 @@ int destroy_tcp_client(TCP_CLIENT_CONN client)
   return 0;
 }
 
-int tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len)
+int
+tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len)
 {
   int total = 0;
   int remaining = buf_len;
@@ -172,7 +185,8 @@ int tcp_recvn(TCP_HANDLER handler, char *buf, int buf_len)
   return total;
 }
 
-int tcp_sendn(TCP_HANDLER handler, char *buf, int buf_len)
+int
+tcp_sendn(TCP_HANDLER handler, char *buf, int buf_len)
 {
   int total = 0;
   int remaining = buf_len;
@@ -190,7 +204,8 @@ int tcp_sendn(TCP_HANDLER handler, char *buf, int buf_len)
   return 0;
 }
 
-int tcp_send(TCP_HANDLER handler, char *buf, int buf_len)
+int
+tcp_send(TCP_HANDLER handler, char *buf, int buf_len)
 {
   char num_buf[4];
   uint32_t len_nb = htonl(buf_len);
@@ -215,7 +230,8 @@ int tcp_send(TCP_HANDLER handler, char *buf, int buf_len)
   return 0;
 }
 
-int tcp_recv(TCP_HANDLER handler, char *buf, int *output_len)
+int
+tcp_recv(TCP_HANDLER handler, char *buf, int *output_len)
 {
   *output_len = 0;
   char num_buf[4];
@@ -248,6 +264,3 @@ int tcp_recv(TCP_HANDLER handler, char *buf, int *output_len)
   *output_len = size;
   return 0;
 }
-
-
-

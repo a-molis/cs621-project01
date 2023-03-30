@@ -1,3 +1,6 @@
+/**
+ * Integration test for testing simple TCP client server send/recv.
+ */
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,7 +9,7 @@
 #include "tcp_sock_handler.h"
 #include "constants.h"
 
-
+// Struct for arguments passed to test threads.
 struct args {
     char *ip_addr;
     char *port;
@@ -14,7 +17,13 @@ struct args {
     char output[1024];
 };
 
-void *run_server(void *inputs)
+/**
+ * Function to be run in a thread for testing a simple TCP server send.
+ * @param inputs The input pointer, should be a struct args.
+ * @return Pointer to return variable.
+ */
+void
+*run_server(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short server_port = atoi (server_args->port);
@@ -37,7 +46,13 @@ void *run_server(void *inputs)
   return 0;
 }
 
-void *run_client(void *inputs)
+/**
+ * Function to be run in a thread for testing a simple TCP client send.
+ * @param inputs The input pointer, should be a struct args.
+ * @return Pointer to return variable.
+ */
+void
+*run_client(void *inputs)
 {
   struct args *server_args = (struct args*) inputs;
   unsigned short port = atoi (server_args->port);
@@ -64,7 +79,12 @@ void *run_client(void *inputs)
   return 0;
 }
 
-int main() {
+/**
+ * Main function for running test for simple TCP client server send/recv.
+ * @return Returns 0 if no errors, 1 otherwise.
+ */
+int
+main() {
   pthread_t client_thread, server_thread;
   struct args *server_args = malloc (sizeof (struct args));
   server_args->port =  "12055";

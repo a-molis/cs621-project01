@@ -1,3 +1,6 @@
+/**
+ * Main function for running compression detection for part 2.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include "comp_utils.h"
@@ -5,15 +8,13 @@
 
 // TODO test with valgrind
 // TODO update random numbers for TCP send
-// TODO see if only errors with errno need to have perrorg
 // TODO update times in the client server code or setup with thread
 // TODO create pcap files
-// TODO move binaries built to /bin
 // TODO remove random sleeps
+// TODO get alarm time from config/constants.h
 // TODO check rubric and project outline to verify all done
-// TODO verify if do not fragment bit set correctly
-// TODO add comments to all functions
 // TODO check if code follows GNU style
+  // TODO space after every function call
 // TODO update times
 // TODO make sure all errors handled
 // TODO uncomment all code
@@ -39,9 +40,21 @@
 // TODO filter out any ARP messages in pcap files
 // TODO check if Upppercase names ok for struct names
 // TODO read over gnu style
+// TODO remove timeout info in tests
+// TODO move raw socket functions to separate file?
+// TODO remove unused imports/includes
 
 
-int main(int argc, char *argv[])
+
+/**
+ * Main function to run compression detection for part 2.
+ * Run with arg 1 as the path to the config file.
+ * @param argc The number of args.
+ * @param argv The pointer to the argv array.
+ * @return Returns 0 if there are no errors, 1 otherwise.
+ */
+int
+main(int argc, char *argv[])
 {
   char *config_path = argv[1];
   if (!config_path)
@@ -57,7 +70,8 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-int run_compdetect (char *config_path)
+int
+run_compdetect (char *config_path)
 {
   printf ("config path %s\n", config_path);
   char buf[MAX_TCP_SIZE];
