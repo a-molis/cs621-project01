@@ -11,16 +11,8 @@
   // TODO space after every function call
 // TODO all other TODOS
 
-// TODO explain makefile in readme
-// TODO print invalid in part 1 if invalid results
-// TODO filter out any ARP messages in pcap files
 // TODO check if Upppercase names ok for struct names
 // TODO read over gnu style
-// TODO remove timeout info in tests
-// TODO move raw socket functions to separate file?
-// TODO remove unused imports/includes
-
-
 
 /**
  * Main function to run compression detection for part 2.

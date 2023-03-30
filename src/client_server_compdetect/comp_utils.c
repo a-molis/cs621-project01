@@ -333,7 +333,7 @@ recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t, ch
       if (!received)
         {
           struct timeb recv_time;
-          ftime(&recv_time);
+          ftime (&recv_time);
           recv_times[packet_id] = recv_time;
         }
     }
