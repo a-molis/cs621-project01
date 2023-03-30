@@ -520,46 +520,104 @@ compdetect_single (CONFIG config)
 // Struct for argument data to the stop_thread handler.
 struct thread_info
 {
-    pthread_t *rst_listener_thread;
+  pthread_t *rst_listener_thread;
 };
 
 void
 stop_thread (union sigval input)
 {
   struct thread_info *thread_data = (struct thread_info *) input.sival_ptr;
-  printf ("Timeout reached for receiving RST packets\n");
+  write(STDOUT_FILENO, "Timeout\n", 8);
   pthread_kill (*thread_data->rst_listener_thread, SIGALRM);
 }
+struct t_eventData{
+    pthread_t rst_listener_thread;
+};
+
+void expired(union sigval timer_data);
+
+void expired(union sigval timer_data){
+  struct t_eventData *data = timer_data.sival_ptr;
+  write(STDOUT_FILENO, "Timeouts\n", 9);
+  pthread_kill (data->rst_listener_thread, SIGALRM);
+}
+
+
+
 
 int
 close_recv_thread (pthread_t *rst_listener_thread)
 {
   // Reviewed this source on how to create a timer
   // https://opensource.com/article/21/10/linux-timers
-  timer_t id = 0;
-  struct thread_info info;
-  info.rst_listener_thread = rst_listener_thread;
-  struct sigevent event;
-  event.sigev_notify = SIGEV_THREAD;
-  event.sigev_notify_function = &stop_thread;
-  event.sigev_value.sival_ptr = &info;
-  struct itimerspec timer;
-//  int timeout = config->inter_measure_time / 3;
-  timer.it_value.tv_sec = 10;
-  timer.it_value.tv_nsec = 0;
-  timer.it_interval.tv_nsec = 0;
-  timer.it_interval.tv_sec = 0;
-  printf ("Starting a timer for 10 seconds");
-  if (timer_create (CLOCK_REALTIME, &event, &id))
-    {
-      perror ("Error creating timer");
-      return 1;
+  printf ("Starting close thread\n");
+
+  int res = 0;
+  timer_t timerId = 0;
+
+  struct t_eventData eventData = { .rst_listener_thread = *rst_listener_thread };
+
+
+  /*  sigevent specifies behaviour on expiration  */
+  struct sigevent sev = { 0 };
+
+  /* specify start delay and interval
+   * it_value and it_interval must not be zero */
+
+  struct itimerspec its = {   .it_value.tv_sec  = 1,
+    .it_value.tv_nsec = 0,
+    .it_interval.tv_sec  = 0,
+    .it_interval.tv_nsec = 0
+  };
+
+
+  sev.sigev_notify = SIGEV_THREAD;
+  sev.sigev_notify_function = &expired;
+  sev.sigev_value.sival_ptr = &eventData;
+
+
+  /* create timer */
+  res = timer_create(CLOCK_REALTIME, &sev, &timerId);
+
+
+  if (res != 0){
+      fprintf(stderr, "Error timer_create: %s\n", strerror(errno));
+      exit(-1);
     }
-  if (timer_settime (id, 0, &timer, NULL))
-    {
-      perror ("Error starting timer");
-      return 1;
+
+  /* start timer */
+  res = timer_settime(timerId, 0, &its, NULL);
+
+  if (res != 0){
+      fprintf(stderr, "Error timer_settime: %s\n", strerror(errno));
+      exit(-1);
     }
+
+//  timer_t id = 0;
+//  struct thread_info info;
+//  info.rst_listener_thread = rst_listener_thread;
+//  struct sigevent event;
+//  event.sigev_notify = SIGEV_THREAD;
+//  event.sigev_notify_function = stop_thread;
+//  event.sigev_value.sival_ptr = &info;
+//  struct itimerspec timer;
+////  int timeout = config->inter_measure_time / 3;
+//  timer.it_value.tv_sec = 1;
+//  timer.it_value.tv_nsec = 0;
+//  timer.it_interval.tv_nsec = 0;
+//  timer.it_interval.tv_sec = 0;
+//  printf ("Starting a timer for 10 seconds\n");
+//  if (timer_create (CLOCK_REALTIME, &event, &id))
+//    {
+//      perror ("Error creating timer");
+//      return 1;
+//    }
+//  if (timer_settime (id, 0, &timer, NULL))
+//    {
+//      perror ("Error starting timer");
+//      return 1;
+//    }
+//  printf ("Timer set\n");
   if (pthread_join (*rst_listener_thread, NULL))
     {
       perror ("Error joining thread for rst listener");
@@ -733,6 +791,7 @@ recv_rst (void *inputs)
           else
             *(args->recv_times + 0) = recv_time;
           count += 1;
+          printf ("head tcp->dest: %d, args->sin->sin_port: %d, tcp->source %d, tcp_dest_head_syn_port %d \n", ntohs(tcp->dest), ntohs(args->sin->sin_port), ntohs (tcp->source), ntohs (tcp_dest_head_syn_port));
         }
 
       else if (tcp->dest == args->sin->sin_port && tcp->source == tcp_dest_tail_syn_port && tcp->rst)
@@ -744,8 +803,10 @@ recv_rst (void *inputs)
           else
             *(args->recv_times + 1) = recv_time;
           count += 1;
+          printf ("tail tcp->dest: %d, args->sin->sin_port: %d, tcp->source %d, tcp_dest_tail_syn_port %d \n", ntohs(tcp->dest), ntohs(args->sin->sin_port), ntohs (tcp->source), ntohs (tcp_dest_tail_syn_port));
         }
     }
+  printf ("Completed loop");
   print_results (args->recv_times, RST_PACKET_TOTAL);
   printf ("\n");
 }
