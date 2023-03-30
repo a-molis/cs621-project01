@@ -206,7 +206,6 @@ udp_recvfrom_n(UDP_HANDLER handler, char *buf, int buf_len)
                           (struct sockaddr *) handler->addr, &handler->addr_len);
   if (received < buf_len)
     {
-      perror("udp_recvfrom_n failed to recv enough data from socket");
       return errno;
     }
   return 0;

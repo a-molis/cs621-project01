@@ -184,7 +184,7 @@ get_high_entropy_data (CONFIG config, char data[])
 
 void signal_handler ()
 {
-  write (STDOUT_FILENO, "Timeout\n", 8);
+  return;
 }
 
 int
@@ -321,7 +321,6 @@ recv_udp_train (UDP_HANDLER client_handler, CONFIG config, enum train_type t, ch
 
       if (received == EINTR)
         {
-          printf ("%s entropy timeout\n", train_type_str[t]);
           break;
         }
       if (!received)
