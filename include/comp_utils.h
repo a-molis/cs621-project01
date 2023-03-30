@@ -299,6 +299,11 @@ int setup_raw_socket_conns (
  */
 int close_recv_thread (pthread_t *rst_listener_thread);
 
+/**
+ * Handler to send signal to RST recv thread to end if timeout has occurred.
+ * @param input The input pointer to pass args to the handler thread.
+ */
+void stop_thread (union sigval input);
 
 
 #endif //_COMPDETECT_H_

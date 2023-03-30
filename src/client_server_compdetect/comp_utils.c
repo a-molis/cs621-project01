@@ -23,6 +23,13 @@
 #include "tcp_sock_handler.h"
 #include "udp_sock_handler.h"
 
+/**
+ * Sets the packet id
+ * @param buf The buffer to set the id.
+ * @param num The number for the id.
+ */
+void set_packet_id (char *buf, uint16_t num);
+
 int
 client_pre_probe (CONFIG config, char *config_str)
 {
@@ -184,7 +191,7 @@ get_high_entropy_data (CONFIG config, char data[])
 
 void signal_handler ()
 {
-  write (STDOUT_FILENO, "Timeout\n", 8);
+  return;
 }
 
 int
@@ -493,7 +500,6 @@ compdetect_single (CONFIG config)
       free (recv_times);
       return 1;
     }
-  printf ("Sent packet train\n");
   if (udp_destroy_client (udp_client))
     {
       perror("Failed to set up thread for receiving RST packets");
@@ -503,7 +509,6 @@ compdetect_single (CONFIG config)
       perror ("Failed to destroy upd client");
       return 1;
     }
-  printf ("Trying to close recv\n");
   if (close_recv_thread (&rst_listener_thread))
     {
       perror ("Error closing thread for recv");
@@ -538,8 +543,10 @@ close_recv_thread (pthread_t *rst_listener_thread)
   // Reviewed this source on how to create a timer
   // https://opensource.com/article/21/10/linux-timers
   timer_t id = 0;
-  struct thread_info data = { .rst_listener_thread = *rst_listener_thread };
-  struct sigevent sig = { 0 };
+  struct thread_info data;
+  data.rst_listener_thread = *rst_listener_thread;
+  struct sigevent sig;
+  memset (&sig, 0, sizeof (sig));
   struct itimerspec timer;
   timer.it_value.tv_sec = 1;
   timer.it_value.tv_nsec = 0;
@@ -711,12 +718,7 @@ recv_rst (void *inputs)
         }
       else if (received < 0)
         {
-          printf ("break\n");
           break;
-        }
-      else if (received == EINTR)
-        {
-          printf ("received in thread is equal to EINTR \n");
         }
       if (errno){
         printf ("break %d\n", errno);
