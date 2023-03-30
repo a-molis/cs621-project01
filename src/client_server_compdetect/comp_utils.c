@@ -460,6 +460,7 @@ compdetect_single (CONFIG config)
       return 1;
     }
   struct timeb *recv_times = (struct timeb *) malloc (sizeof (struct timeb) * RST_PACKET_TOTAL);
+  memset (recv_times, 0, sizeof (struct timeb) * RST_PACKET_TOTAL );
   if (recv_times == NULL)
     {
       perror ("Unable to create recv_times array");
