@@ -51,4 +51,13 @@ enum train_type
     high = 1,
 };
 
+/**
+ * This is used for raw packet window size.
+ * This is based off a window size the OS picked previously for part 1 packets.
+ */
+static unsigned short WINDOW_SIZE = 64240;
+
+// Max value for seq num in raw TCP packet.
+static unsigned int MAX_SEQ_NUM = 500;
+
 #endif //_CONSTANTS_H_

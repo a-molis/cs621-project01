@@ -119,9 +119,38 @@ int get_high_entropy_data (CONFIG config, char data[]);
  * @return Returns 0 if there is no error 1 otherwise.
  */
 int send_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockaddr_in *sout);
+
+/**
+ * Creates a new syn packet for a raw TCP packet.
+ * This resource was reviewed for making this function
+ * https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L49
+ *
+ * @param sin The struct sockaddr_in for the sending connection.
+ * @param sout The struct sockaddr_in for the receiving connection.
+ * @param packet The buffer to store the packet.
+ * @param packet_len The length of the pacekt.
+ * @param id The id of the packet.
+ * @return Returns 0 if there is no error 1 otherwise.
+ */
 int new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet, int packet_len, int id);
 
+/**
+ * Sends a raw TCP syn packet using the connection info from sout.
+ * @param sockfd The socket file descriptor.
+ * @param sout The struct sockaddr_in for the receiving connection.
+ * @param packet The packet to send.
+ * @return Returns 0 if there is no error 1 otherwise.
+ */
 int send_syn_packet (int sockfd, struct sockaddr_in *sout, char *packet);
+
+/**
+ * Creates a raw socket for the interface and puts the socket file descriptor in sockfd.
+ * @param sockfd The place to store the socket file descriptor.
+ *               Upon completion of this function this will point to a socket file descriptor.
+ * @param interface The network interface to use for the raw socket.
+ * @param config The configuration.
+ * @return Returns 0 if there is no error 1 otherwise.
+ */
 int create_raw_socket (int *sockfd, char *interface, CONFIG config);
 
 /**

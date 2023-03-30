@@ -7,7 +7,6 @@
 #include "udp_sock_handler.h"
 
 // TODO test with valgrind
-// TODO update random numbers for TCP send
 // TODO update times in the client server code or setup with thread
 // TODO create pcap files
 // TODO remove random sleeps
@@ -73,7 +72,6 @@ main(int argc, char *argv[])
 int
 run_compdetect (char *config_path)
 {
-  printf ("config path %s\n", config_path);
   char buf[MAX_TCP_SIZE];
   CONFIG config = get_config (config_path, buf);
   if (config == NULL)

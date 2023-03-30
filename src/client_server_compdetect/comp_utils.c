@@ -565,7 +565,6 @@ close_recv_thread (pthread_t *rst_listener_thread)
       perror ("Error joining thread for rst listener");
       return 1;
     }
-  printf ("Closed thread\n");
   return 0;
 }
 
@@ -851,29 +850,19 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
 
   ip->version = 4;
   ip->ihl = 5;
-  ip->tos = 0;
   ip->ttl = 32;
   ip->tot_len = sizeof (struct tcphdr) + sizeof (struct iphdr);
   ip->id = htonl (id);
-  ip->frag_off = 0;
-  ip->check = 0;
   ip->protocol = IPPROTO_TCP;
-
   ip->daddr = sout->sin_addr.s_addr;
   ip->saddr = sin->sin_addr.s_addr;
 
   tcp->source = sin->sin_port;
   tcp->dest = sout->sin_port;
-  tcp->seq = htonl(rand() % 4294967295);
+  tcp->seq = htonl(rand() % MAX_SEQ_NUM);
   tcp->ack_seq = htonl (0);
   tcp->syn = 1;
-  tcp->cwr = 0;
-  tcp->urg = 0;
-  tcp->ack = 0;
-  tcp->psh = 0;
-  tcp->rst = 0;
-  tcp->fin = 0;
-  tcp->window = htons (64240);
+  tcp->window = htons (WINDOW_SIZE);
   tcp->doff = 5;
 
   struct pseudo_header tcp_pseudo_header;
