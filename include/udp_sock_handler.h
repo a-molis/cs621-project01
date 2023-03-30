@@ -131,6 +131,16 @@ UDP_CLIENT_CONN udp_new_client(char *ip_address, unsigned short port);
 int udp_client_connect(UDP_CLIENT_CONN client);
 
 /**
+ * Creates the connection socket and other data for the UDP_CLIENT_CONN to work with a server.
+ * A UDP_CLIENT_CONN should be first created with the function udp_new_client.
+ * This also binds the source port so the
+ * @param client The UDP_CLIENT_CONN to start.
+ * @param src_port
+ * @return Returns 0 if there are no error 1 otherwise.
+ */
+int udp_client_connect_bind(UDP_CLIENT_CONN client, int src_port);
+
+/**
  * Frees the memory for a UDP_CLIENT_CONN.
  * @param client The UDP_CLIENT_CONN to free.
  * @return Returns 0 if there are no error 1 otherwise.

@@ -176,6 +176,27 @@ udp_client_connect(UDP_CLIENT_CONN client)
 }
 
 int
+udp_client_connect_bind (UDP_CLIENT_CONN client, int src_port)
+{
+  if (udp_client_connect (client))
+    {
+      perror ("Failed to set up socket connection for client conn");
+      return 1;
+    }
+  struct sockaddr_in sin;
+  memset (&sin, 0, sizeof (struct sockaddr_in));
+  sin.sin_addr.s_addr = INADDR_ANY;
+  sin.sin_port = htons (src_port);
+  sin.sin_family = AF_INET;
+  if (bind (client->handler->sockfd, (struct sockaddr *) &sin, sizeof (sin)) < 0)
+    {
+      perror ("cannot bind socket to address");
+      return 1;
+    }
+  return 0;
+}
+
+int
 udp_destroy_client(UDP_CLIENT_CONN client)
 {
   if (client)

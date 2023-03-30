@@ -117,7 +117,7 @@ client_probe(CONFIG config)
       perror ("Failed to create udp_client");
       return 1;
     }
-  if (udp_client_connect (udp_client))
+  if (udp_client_connect_bind (udp_client, config->udp_source_port))
     {
       if (udp_destroy_client (udp_client))
         {
@@ -688,11 +688,11 @@ send_single_train (
       perror ("Client failed to send low entropy data");
       return 1;
     }
-//  if (send_tcp_syn (config, sockfd, sin, tail_sockaddr_in))
-//    {
-//      perror ("Failed to send_tcp_syn packet");
-//      return 1;
-//    }
+  if (send_tcp_syn (config, sockfd, sin, tail_sockaddr_in))
+    {
+      perror ("Failed to send_tcp_syn packet");
+      return 1;
+    }
   return 0;
 }
 

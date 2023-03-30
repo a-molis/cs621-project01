@@ -6,29 +6,19 @@
 #include "comp_utils.h"
 #include "udp_sock_handler.h"
 
-// TODO test with valgrind
-// TODO update times in the client server code or setup with thread
+
 // TODO create pcap files
-// TODO remove random sleeps
-// TODO get alarm time from config/constants.h
 // TODO check rubric and project outline to verify all done
 // TODO check if code follows GNU style
   // TODO space after every function call
-// TODO update times
-// TODO make sure all errors handled
-// TODO uncomment all code
 // TODO better error handling around unable ot connect to server with different ip address
 // TODO all other TODOS
-// TODO make sure no magic numbers
 // TODO make sure all config variables used
-// TODO remove compiler warnings
-// TODO clean up makefile
-// TODO verify all caps ok for typedef variables
+
 // TODO error check if not run with sudo
 // TODO refactor to move raw logic to other file
 // TODO make sure single application does not seg fault if not run without root
 // TODO move all free error check functions in wrapper functions
-// TODO remove test/simple_client.c and test/simple_server.c
 // TODO check if using config->udp_source_port
 // TODO add error handling around close function calls
 // TODO explain makefile in readme
