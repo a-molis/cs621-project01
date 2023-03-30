@@ -520,7 +520,7 @@ compdetect_single (CONFIG config)
 // Struct for argument data to the stop_thread handler.
 struct thread_info
 {
-    pthread_t *rst_listener_thread;
+  pthread_t rst_listener_thread;
 };
 
 void
@@ -528,7 +528,7 @@ stop_thread (union sigval input)
 {
   struct thread_info *thread_data = (struct thread_info *) input.sival_ptr;
   printf ("Timeout reached for receiving RST packets\n");
-  pthread_kill (*thread_data->rst_listener_thread, SIGALRM);
+  pthread_kill (thread_data->rst_listener_thread, SIGALRM);
 }
 
 int
@@ -537,29 +537,28 @@ close_recv_thread (pthread_t *rst_listener_thread)
   // Reviewed this source on how to create a timer
   // https://opensource.com/article/21/10/linux-timers
   timer_t id = 0;
-  struct thread_info info;
-  info.rst_listener_thread = rst_listener_thread;
-  struct sigevent event;
-  event.sigev_notify = SIGEV_THREAD;
-  event.sigev_notify_function = &stop_thread;
-  event.sigev_value.sival_ptr = &info;
+  struct thread_info data = { .rst_listener_thread = *rst_listener_thread };
+  struct sigevent sig = { 0 };
   struct itimerspec timer;
-//  int timeout = config->inter_measure_time / 3;
-  timer.it_value.tv_sec = 10;
+  timer.it_value.tv_sec = 1;
   timer.it_value.tv_nsec = 0;
   timer.it_interval.tv_nsec = 0;
   timer.it_interval.tv_sec = 0;
-  printf ("Starting a timer for 10 seconds");
-  if (timer_create (CLOCK_REALTIME, &event, &id))
+  sig.sigev_notify = SIGEV_THREAD;
+  sig.sigev_notify_function = &stop_thread;
+  sig.sigev_value.sival_ptr = &data;
+
+  if (timer_create (CLOCK_REALTIME, &sig, &id))
     {
-      perror ("Error creating timer");
+      perror ("Error creating timer for rst listener");
       return 1;
     }
   if (timer_settime (id, 0, &timer, NULL))
     {
-      perror ("Error starting timer");
+      perror ("Error starting timer for rst listener");
       return 1;
     }
+
   if (pthread_join (*rst_listener_thread, NULL))
     {
       perror ("Error joining thread for rst listener");
