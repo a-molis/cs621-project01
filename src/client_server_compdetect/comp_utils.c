@@ -184,7 +184,7 @@ get_high_entropy_data (CONFIG config, char data[])
 
 void signal_handler ()
 {
-  return;
+  write (STDOUT_FILENO, "Timeout\n", 8);
 }
 
 int
@@ -492,6 +492,7 @@ compdetect_single (CONFIG config)
       free (recv_times);
       return 1;
     }
+  printf ("Sent packet train\n");
   if (udp_destroy_client (udp_client))
     {
       perror("Failed to set up thread for receiving RST packets");
@@ -501,7 +502,8 @@ compdetect_single (CONFIG config)
       perror ("Failed to destroy upd client");
       return 1;
     }
-  if (close_recv_thread(&rst_listener_thread))
+  printf ("Trying to close recv\n");
+  if (close_recv_thread (&rst_listener_thread))
     {
       perror ("Error closing thread for recv");
       free (args);
@@ -518,7 +520,7 @@ compdetect_single (CONFIG config)
 // Struct for argument data to the stop_thread handler.
 struct thread_info
 {
-    pthread_t rst_listener_thread;
+    pthread_t *rst_listener_thread;
 };
 
 void
@@ -526,7 +528,7 @@ stop_thread (union sigval input)
 {
   struct thread_info *thread_data = (struct thread_info *) input.sival_ptr;
   printf ("Timeout reached for receiving RST packets\n");
-  pthread_kill (thread_data->rst_listener_thread, SIGALRM);
+  pthread_kill (*thread_data->rst_listener_thread, SIGALRM);
 }
 
 int
@@ -536,16 +538,18 @@ close_recv_thread (pthread_t *rst_listener_thread)
   // https://opensource.com/article/21/10/linux-timers
   timer_t id = 0;
   struct thread_info info;
-  info.rst_listener_thread = *rst_listener_thread;
+  info.rst_listener_thread = rst_listener_thread;
   struct sigevent event;
   event.sigev_notify = SIGEV_THREAD;
   event.sigev_notify_function = &stop_thread;
   event.sigev_value.sival_ptr = &info;
   struct itimerspec timer;
-  timer.it_value.tv_sec = 1;
+//  int timeout = config->inter_measure_time / 3;
+  timer.it_value.tv_sec = 10;
   timer.it_value.tv_nsec = 0;
   timer.it_interval.tv_nsec = 0;
   timer.it_interval.tv_sec = 0;
+  printf ("Starting a timer for 10 seconds");
   if (timer_create (CLOCK_REALTIME, &event, &id))
     {
       perror ("Error creating timer");
@@ -676,11 +680,11 @@ send_single_train (
       perror ("Client failed to send low entropy data");
       return 1;
     }
-  if (send_tcp_syn (config, sockfd, sin, tail_sockaddr_in))
-    {
-      perror ("Failed to send_tcp_syn packet");
-      return 1;
-    }
+//  if (send_tcp_syn (config, sockfd, sin, tail_sockaddr_in))
+//    {
+//      perror ("Failed to send_tcp_syn packet");
+//      return 1;
+//    }
   return 0;
 }
 
@@ -692,13 +696,13 @@ recv_rst (void *inputs)
   int sock = *args->sockfd;
 
   ssize_t received;
+  char buf[args->config->raw_packet_size];
+  memset (buf, 0, args->config->raw_packet_size);
   uint16_t tcp_dest_head_syn_port = htons (args->config->tcp_dest_head_syn_port);
   uint16_t tcp_dest_tail_syn_port = htons (args->config->tcp_dest_tail_syn_port);
   int count = 0;
   while (count < RST_PACKET_TOTAL)
     {
-      char buf[args->config->raw_packet_size];
-      memset (buf, 0, args->config->raw_packet_size);
       received = recvfrom (sock, buf, args->config->raw_packet_size, 0, NULL, NULL);
       if (received == 0)
         {
@@ -707,7 +711,7 @@ recv_rst (void *inputs)
         }
       else if (received < 0)
         {
-          printf ("Errno from invalid recv %d sockfd: %d, pointer %p\n", errno, *args->sockfd, args->sockfd);
+          printf ("break\n");
           break;
         }
       else if (received == EINTR)
@@ -715,7 +719,7 @@ recv_rst (void *inputs)
           printf ("received in thread is equal to EINTR \n");
         }
       if (errno){
-        printf ("sockfd: %d, errno %d\n", *args->sockfd, errno);
+        printf ("break %d\n", errno);
         break;
       }
       struct iphdr *ip = (struct iphdr *) buf;

@@ -299,11 +299,6 @@ int setup_raw_socket_conns (
  */
 int close_recv_thread (pthread_t *rst_listener_thread);
 
-/**
- * This is the handler function that stops the RST recv thread/function by sending a signal
- * This is triggered after the a timeout.
- * @param input This is the input value into the handler from the main thread.
- */
-void stop_thread (union sigval input);
+
 
 #endif //_COMPDETECT_H_

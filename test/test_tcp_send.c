@@ -66,7 +66,6 @@ void
   char test[MAX_TCP_SIZE];
   int output_len = 0;
 
-  // TODO check if needed
   memset (test, '\0', sizeof (MAX_TCP_SIZE));
   int received = tcp_recv (client->handler, test, &output_len);
   if (received)
