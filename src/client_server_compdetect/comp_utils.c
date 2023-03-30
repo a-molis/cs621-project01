@@ -265,12 +265,8 @@ process_comp (char *result, double low_entropy_duration, double high_entropy_dur
 }
 
 int
-get_low_entropy_data (
-  UDP_HANDLER client_handler,
-  CONFIG config,
-  enum train_type type,
-  char *result,
-  double *low_entropy_duration)
+get_low_entropy_data (UDP_HANDLER client_handler, CONFIG config, enum train_type type,
+                      char *result, double *low_entropy_duration)
 {
   signal (SIGALRM, signal_handler);
   int timeout = config->inter_measure_time / 3;
@@ -578,13 +574,8 @@ close_recv_thread (pthread_t *rst_listener_thread, CONFIG config)
 }
 
 int
-setup_raw_socket_conns (
-  CONFIG config,
-  struct sockaddr_in *sin,
-  struct sockaddr_in *head_sockaddr_in,
-  struct sockaddr_in *tail_sockaddr_in,
-  UDP_CLIENT_CONN *udp_client,
-  int *sockfd)
+setup_raw_socket_conns (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in,
+                        struct sockaddr_in *tail_sockaddr_in, UDP_CLIENT_CONN *udp_client, int *sockfd)
 {
   *udp_client = udp_new_client (config->server_ip, config->udp_dest_port);
   if ((*udp_client) == NULL)
@@ -627,7 +618,8 @@ setup_raw_socket_conns (
 }
 
 int
-setup_sockaddrs (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in)
+setup_sockaddrs (CONFIG config, struct sockaddr_in *sin,
+                 struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in)
 {
   memset (sin, 0, sizeof ((*sin)));
   sin->sin_addr.s_addr = inet_addr (config->client_ip);
@@ -647,13 +639,8 @@ setup_sockaddrs (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *hea
 }
 
 int
-send_single_train (
-  CONFIG config,
-  int sockfd,
-  struct sockaddr_in *sin,
-  struct sockaddr_in *head_sockaddr_in,
-  struct sockaddr_in *tail_sockaddr_in,
-  UDP_CLIENT_CONN udp_client)
+send_single_train (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in,
+                   struct sockaddr_in *tail_sockaddr_in, UDP_CLIENT_CONN udp_client)
 {
   if (send_tcp_syn (config, sockfd, sin, head_sockaddr_in))
     {
@@ -785,14 +772,9 @@ compute_time_diff (struct timeb time_1, struct timeb time_2)
 }
 
 int
-start_rst_listener (
-  pthread_t *rst_listener_thread,
-  struct rst_listener_args *args,
-  CONFIG config,
-  struct timeb *recv_times,
-  int sockfd, struct
-  sockaddr_in *sin,
-  struct sockaddr_in *head_sockaddr_in)
+start_rst_listener (pthread_t *rst_listener_thread, struct rst_listener_args *args,
+                    CONFIG config, struct timeb *recv_times, int sockfd, struct sockaddr_in *sin,
+                    struct sockaddr_in *head_sockaddr_in)
 {
   int count = 0;
   args->config = config;
@@ -834,7 +816,8 @@ send_tcp_syn (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockadd
   return 0;
 }
 
-// pseudo header form TCP rfc and from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L12
+// pseudo header form TCP rfc and from
+// https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L12
 struct pseudo_header
 {
     u_int32_t source_address;
@@ -890,7 +873,8 @@ new_syn_packet (struct sockaddr_in *sin, struct sockaddr_in *sout, char *packet,
   return 0;
 }
 
-// This function is from https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
+// This function is from
+// https://github.com/MaxXor/raw-sockets-example/blob/6bf7f8bb550ccbe9e3b29d2cc632c9b91197fdd6/rawsockets.c#L24
 unsigned short
 checksum (const char *buf, unsigned size)
 {

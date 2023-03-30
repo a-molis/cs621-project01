@@ -186,8 +186,15 @@ struct rst_listener_args
  * @param head_sockaddr_in The struct sockaddr_in for the tcp head port/host
  * @return Returns 0 if the listener was set up without errors, 1 otherwise.
  */
-int start_rst_listener (pthread_t *rst_listener_thread, struct rst_listener_args *args, CONFIG config, struct timeb *recv_times, int sockfd,
-                        struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in);
+int start_rst_listener (pthread_t *rst_listener_thread, struct rst_listener_args *args,
+                        CONFIG config, struct timeb *recv_times, int sockfd, struct sockaddr_in *sin,
+                        struct sockaddr_in *head_sockaddr_in);
+
+/**
+ * Prints the results of the RST packets received.
+ * @param recv_times The array of received times.
+ * @param rst_count The number of RST packets to check.
+ */
 void print_results (struct timeb *recv_times, const int rst_count);
 
 /**
@@ -207,12 +214,8 @@ double compute_time_diff (struct timeb time_1, struct timeb time_2);
  * @param low_entropy_duration The result for the time it takes for the low entropy data to send.
  * @return Returns 0 if no errors occurred, 1 otherwise.
  */
-int get_low_entropy_data (
-  UDP_HANDLER client_handler,
-  CONFIG config,
-  enum train_type type,
-  char *result,
-  double *low_entropy_duration);
+int get_low_entropy_data (UDP_HANDLER client_handler, CONFIG config,
+                          enum train_type type, char *result, double *low_entropy_duration);
 
 /**
  * Prints out if compression is detected.
@@ -250,13 +253,8 @@ int process_train (CONFIG config, struct timeb recv_times[], double *mss, char r
  * @param udp_client The UDP_CLIENT used to send the UDP packet train data.
  * @return Returns 0 if no errors, 1 otherwise.
  */
-int send_single_train (
-  CONFIG config,
-  int sockfd,
-  struct sockaddr_in *sin,
-  struct sockaddr_in *head_sockaddr_in,
-  struct sockaddr_in *tail_sockaddr_in,
-  UDP_CLIENT_CONN udp_client);
+int send_single_train (CONFIG config, int sockfd, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in,
+                       struct sockaddr_in *tail_sockaddr_in, UDP_CLIENT_CONN udp_client);
 
 /**
  * Helper function to create struct sockaddr_in's for creating and receiving raw TCP packets.
@@ -267,11 +265,8 @@ int send_single_train (
  * @param tail_sockaddr_in The struct sockaddr_in for the TCP SYN tail port/host info.
  * @return Returns 0 if no errors, 1 otherwise.
  */
-int setup_sockaddrs (
-  CONFIG config,
-  struct sockaddr_in *sin,
-  struct sockaddr_in *head_sockaddr_in,
-  struct sockaddr_in *tail_sockaddr_in);
+int setup_sockaddrs (CONFIG config, struct sockaddr_in *sin,
+                     struct sockaddr_in *head_sockaddr_in, struct sockaddr_in *tail_sockaddr_in);
 
 /**
  * Sets up all of the structs and sockets raw a raw TCP socket.  This also creates the UDP_CLIENT_CONN.
@@ -284,13 +279,8 @@ int setup_sockaddrs (
  * @param sockfd The raw socket id pointer.
  * @return Returns 0 if no errors, 1 otherwise.
  */
-int setup_raw_socket_conns (
-  CONFIG config,
-  struct sockaddr_in *sin,
-  struct sockaddr_in *head_sockaddr_in,
-  struct sockaddr_in *tail_sockaddr_in,
-  UDP_CLIENT_CONN *udp_client,
-  int *sockfd);
+int setup_raw_socket_conns (CONFIG config, struct sockaddr_in *sin, struct sockaddr_in *head_sockaddr_in,
+                            struct sockaddr_in *tail_sockaddr_in, UDP_CLIENT_CONN *udp_client, int *sockfd);
 
 /**
  * Closes the receiver thread for the RST packets.

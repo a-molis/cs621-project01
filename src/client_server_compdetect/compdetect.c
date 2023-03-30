@@ -7,6 +7,8 @@
 #include "udp_sock_handler.h"
 
 // TODO check if code follows GNU style
+  // TODO make sure long params split correctly
+  // IF else with braces
 // TODO all other TODOS
 // TODO check if Upppercase names ok for struct names
 

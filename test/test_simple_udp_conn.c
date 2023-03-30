@@ -97,8 +97,8 @@ main() {
   pthread_join (client_thread, NULL);
   pthread_join (server_thread, NULL);
   int success = 0;
-  if (server_args->started_client || server_args->started_server ||
-  (strcmp (server_args->input, server_args->output) != 0))
+  if (server_args->started_client || server_args->started_server
+      || (strcmp (server_args->input, server_args->output) != 0))
     success = 1;
   free (server_args);
   return success;
