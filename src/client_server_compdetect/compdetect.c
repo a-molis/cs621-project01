@@ -6,12 +6,6 @@
 #include "comp_utils.h"
 #include "udp_sock_handler.h"
 
-// TODO check if code follows GNU style
-  // TODO make sure long params split correctly
-  // IF else with braces
-// TODO all other TODOS
-// TODO check if Upppercase names ok for struct names
-
 /**
  * Main function to run compression detection for part 2.
  * Run with arg 1 as the path to the config file.
