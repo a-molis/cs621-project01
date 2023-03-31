@@ -153,8 +153,8 @@ A timer is used to signal the thread receiving the RST packets to finish.
 The random file contains data to be used for sending high entropy data.
 
 ## Pcap files
-The pcap files are located at `tcpdumps/`. Part 1 client and server pcaps are located at `tcpdumps/part1-client.pcap` and `part1-server.pcap`.
-The part 2 pcap files is located at `tcpdumps/part2-compdetect.pcap`.
+The pcap files are located at `tcpdumps/`. Part 1 sender pcap is located at `tcpdumps/client_server.pcap`.
+The part 2 pcap files is located at `tcpdumps/standalone.pcap`.
 
 
 ## Project Completion
